@@ -1,4 +1,3 @@
-from compasce_degs import run_all, create_dask_client, create_o2_dask_client
 from anndata import read_h5ad
 import numpy as np
 import pandas as pd
@@ -130,17 +129,4 @@ if __name__ == "__main__":
         "subclass_l1",
     ]
 
-    ladata = run_all(
-        get_adata,
-        zarr_path=args.output,
-        overwrite=args.overwrite,
-        client=create_o2_dask_client(memory_limit=args.mem_limit),
-        donor_id_col=donor_id_col,
-        sample_id_col=sample_id_col,
-        sample_group_pairs=sample_group_pairs,
-        cell_type_cols=cell_type_cols,
-        stop_early=args.stop_early,
-        input_deg_dir=args.input_deg_dir,
-    )
 
-    print("Done")

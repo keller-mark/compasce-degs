@@ -1,11 +1,11 @@
 # compasce-degs
 
-Starting over to implement differential expression tests for KPMP single-nucleus RNA-seq data.
+Differential expression tests for KPMP single-nucleus RNA-seq data.
 
-This time, we will output results to tabular formats, disregarding the ultimate format and any downstream conversion into this format.
+We will output results to tabular (CSV) format.
 We can also disregard the need to convert the expression matrix to dense format for now, and can keep it sparse to save on memory during DEG computations.
 
-We want to avoid Zarr in this repo, and will instead work in terms of H5AD files before producing tabular outputs.
+We will work with H5AD files before producing tabular outputs.
 
 Note that the dataset is over 20 GB, exceeding my laptop RAM of 16 GB, so we cannot forget about accounting for the out-of-memory problem at the computationally expensive steps that process the expression matrix, like computing pseudobulks.
 
@@ -26,4 +26,3 @@ For all-samples cases (not split by sample groups), we can do both:
 and we can allow users to toggle between these results in the UI.
 
 When using the adjudicated sample categorizations, we want to aggregate the AKI subcategories of ATI and AIN (roll them up into a parent "AKI" category), since there are currently not enough samples for comparisons at the subcategory level to make sense.
-

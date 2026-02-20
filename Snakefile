@@ -1,5 +1,5 @@
 include: "./common.smk"
-configfile: "./scrnaseq_kpmp.yaml"
+configfile: "./config.yaml"
 
 RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad")
 RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv")
@@ -48,13 +48,6 @@ rule normalize_basic:
     NORMALIZED_H5AD_PATH
   shell:
     """
-    compasce \
-        --zarr-path {ZARR_PATH} \
-        --function-name "normalize_basic"
+    # TODO
     """
 
-
-# No download rule:
-# - Download raw data from Globus and put in RAW_DIR/kpmp-aug-2025
-# - Download clinical metadata from  KPMP Atlas Repository
-#   https://atlas.kpmp.org/repository/?size=n_20_n&filters%5B0%5D%5Bfield%5D=data_type&filters%5B0%5D%5Bvalues%5D%5B0%5D=Clinical%20Study%20Data&filters%5B0%5D%5Btype%5D=any
