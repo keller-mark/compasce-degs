@@ -8,7 +8,7 @@ from .io.lazy_anndata import create_lazy_anndata, create_sample_df
 from .io.comparison_metadata import MultiComparisonMetadata
 
 
-def run_all(get_adata, zarr_path, overwrite=False, client=None, sample_id_col=None, donor_id_col=None, sample_group_pairs=None, cell_type_cols=None, stop_early=False, input_deg_dir=None):
+def run_all(get_adata, out_h5ad_path, overwrite=False, client=None, sample_id_col=None, donor_id_col=None, sample_group_pairs=None, cell_type_cols=None, stop_early=False, input_deg_dir=None):
     """
     def get_adata():
         return read_h5ad("path/to/adata.h5ad")
@@ -28,12 +28,12 @@ def run_all(get_adata, zarr_path, overwrite=False, client=None, sample_id_col=No
         donor_id_col=donor_id_col,
         cell_type_cols=cell_type_cols if cell_type_cols is not None else ["cell_type"],
     )
-    if not overwrite:
-        # Initialize with contents of /uns/comparison_metadata
-        cm.load_state(zarr_path)
+    # if not overwrite:
+    #     # Initialize with contents of /uns/comparison_metadata
+    #     cm.load_state(zarr_path)
 
     all_cmp = cm.add_comparison("__all__")
-    # all_cmp.append_df("uns", "cells", None, { "obsType": "cell" }) # assumed
+    all_cmp.append_df("uns", "cells", None, { "obsType": "cell" }) # assumed
 
     if "counts" not in adata.layers:
         raise ValueError("adata.layers['counts'] must exist")
@@ -42,29 +42,33 @@ def run_all(get_adata, zarr_path, overwrite=False, client=None, sample_id_col=No
     if adata.shape[1] < 1:
         raise ValueError("adata must have at least one column")
 
-    ladata = create_lazy_anndata(adata, zarr_path, client=client, overwrite=overwrite)
+    # ladata = create_lazy_anndata(adata, zarr_path, client=client, overwrite=overwrite)
 
-    del adata
+    #del adata
 
-    sample_df = create_sample_df(ladata, cm)
+    sample_df = create_sample_df(adata, cm)
     uns_key = all_cmp.append_df("uns", "samples", None, {
         "obsType": "sample"
     })
-    ladata.uns[uns_key] = sample_df
+    adata.uns[uns_key] = sample_df
 
     if stop_early:
-        ladata.uns["comparison_metadata"] = cm.serialize()
-        ladata.save(arr_path=["uns", "comparison_metadata"])
-        return ladata
+        adata.uns["comparison_metadata"] = cm.serialize()
+        # ladata.save(arr_path=["uns", "comparison_metadata"])
+
+        adata.write_h5ad(out_h5ad_path)
+        return True
     
     # TODO: for KPMP, fill in pre-processed differential expression results here? Or during the compute_diffexp step?
     # Or, just fill in at the end, after the normal pipeline has finished?
 
     # depends on: uns/write_metadata/layers/counts
     # creates: uns/write_metadata/layers/logcounts
-    normalize_basic(ladata, cm)
+    normalize_basic(adata, cm)
 
-    del ladata.layers["counts"]
+    adata.write_h5ad(out_h5ad_path)
+    """ 
+    #del ladata.layers["counts"]
 
     # depends on: uns/write_metadata/layers/counts
     # creates: /layers/pearson_residuals
@@ -98,5 +102,6 @@ def run_all(get_adata, zarr_path, overwrite=False, client=None, sample_id_col=No
 
     ladata.uns["comparison_metadata"] = cm.serialize()
     ladata.save()
+    """
 
-    return ladata
+    return True
