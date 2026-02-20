@@ -7,28 +7,37 @@ RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalDa
 # Intermediate output paths
 NORMALIZED_H5AD_PATH = join(INTERMEDIATE_DIR, "normalized.h5ad")
 
+SAMPLE_GROUP_COLS = [ c["colname"] for c in config["sample_group_pairs"] ]
+SAMPLE_GROUP_LHSS = [ c["lhs"] for c in config["sample_group_pairs"] ]
+SAMPLE_GROUP_RHSS = [ c["rhs"] for c in config["sample_group_pairs"] ]
+
 # Rules
 rule all:
   input:
     # Expansions for L1 cell types, cell type vs rest, not pseudobulked
     expand(
       join(PROCESSED_DIR, "cell_type_vs_rest", "not_pseudobulked", "{cell_type_col}", "{cell_type}.csv"),
-      cell_type_col="subclass_l1",
+      cell_type_col=["subclass_l1"],
       cell_type=config["cell_types"]["subclass_l1"],
     ),
     # Expansions for L1 cell types, cell type vs rest, pseudobulked
     expand(
       join(PROCESSED_DIR, "cell_type_vs_rest", "pseudobulked", "{cell_type_col}", "{cell_type}.csv"),
-      cell_type_col="subclass_l1",
+      cell_type_col=["subclass_l1"],
       cell_type=config["cell_types"]["subclass_l1"],
     ),
     # Expansions for L1 cell types, pairwise comparisons betwen sample groups (group_col, lhs_group, rhs_group), pseudobulked
     expand(
-      join(PROCESSED_DIR, "within_cell_type", "pseudobulked", "{sample_col}", "{lhs_group}", "{rhs_group}", "{cell_type_col}", "{cell_type}.csv"),
+      expand(
+        join(PROCESSED_DIR, "within_cell_type", "pseudobulked", "{sample_col}", "{lhs_group}", "{rhs_group}", "{{cell_type_col}}", "{{cell_type}}.csv"),
+        zip, # We use zip here to avoid combinatorial expansion, since we want to match the (sample_col, lhs_group, rhs_group) together as tuples.
+        sample_col=SAMPLE_GROUP_COLS,
+        lhs_group=SAMPLE_GROUP_LHSS,
+        rhs_group=SAMPLE_GROUP_RHSS,
+      ),
       cell_type_col="subclass_l1",
       cell_type=config["cell_types"]["subclass_l1"],
-      # TODO: fill in the rest of wildcards
-    ),
+    )
 
 
 
@@ -43,9 +52,14 @@ rule all:
 
 rule normalize_basic:
   input:
-    RAW_H5AD_PATH
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata")
   output:
-    NORMALIZED_H5AD_PATH
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic")
+  resources:
+    slurm_partition="short",
+    runtime=60*2, # 2 hours
+    mem_mb=240_000, # 120 GB
+    cpus_per_task=2
   shell:
     """
     compasce \
@@ -53,6 +67,27 @@ rule normalize_basic:
         --function-name "normalize_basic"
     """
 
+rule convert_to_zarr:
+  input:
+    h5ad=join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad"),
+    clinical=join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv"),
+    deg_dir=join(RAW_DIR, "kpmp-aug-2025")
+  output:
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata")
+  resources:
+    slurm_partition="short",
+    runtime=60*2, # 2 hours
+    mem_mb=240_000, # 240 GB
+    cpus_per_task=2
+  shell:
+    """
+    python scripts/run_comparisons_kpmp_2025.py \
+        --input-h5ad {input.h5ad} \
+        --input-csv {input.clinical} \
+        --input-deg-dir {input.deg_dir} \
+        --output {ZARR_PATH} \
+        --stop-early
+    """
 
 # No download rule:
 # - Download raw data from Globus and put in RAW_DIR/kpmp-aug-2025

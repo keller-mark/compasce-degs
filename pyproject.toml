@@ -63,6 +63,11 @@ dev = [
 [project.urls]
 repository = "https://github.com/keller-mark/compasce-degs"
 
+
+[project.scripts]
+compasce = "compasce.pipeline_cli:run_cli"
+
+
 # Reference: https://stackoverflow.com/a/74421415
 [tool.setuptools]
 package-dir = {"" = "src"}
