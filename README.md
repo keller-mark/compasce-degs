@@ -5,6 +5,10 @@ Starting over to implement differential expression tests for KPMP single-nucleus
 This time, we will output results to tabular formats, disregarding the ultimate format and any downstream conversion into this format.
 We can also disregard the need to convert the expression matrix to dense format for now, and can keep it sparse to save on memory during DEG computations.
 
+We want to avoid Zarr in this repo, and will instead work in terms of H5AD files before producing tabular outputs.
+
+Note that the dataset is over 20 GB, exceeding my laptop RAM of 16 GB, so we cannot forget about accounting for the out-of-memory problem at the computationally expensive steps that process the expression matrix, like computing pseudobulks.
+
 We want to use Dask to enable computation on a laptop for individual computations, and we want to use Snakemake for parallelization.
 
 For now, we will limit comptations to subclass L1 cell types (with potential to expand in the future).
