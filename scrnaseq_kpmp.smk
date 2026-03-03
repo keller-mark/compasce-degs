@@ -62,47 +62,10 @@ UNIQUE_SAMPLE_GROUP_COLS = sorted(set(SAMPLE_GROUP_COLS))
 rule all:
   input:
     CLEANED_H5AD_PATH,
-    expand(
-      join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.filtered.adata.h5ad"),
-      cell_type_col=["subclass_l1"],
-      cell_type_name_norm=[normalize_cell_type(ct) for ct in config["cell_types"]["subclass_l1"]],
-      sample_id_col=["specimen"],
-      sample_id=SPECIMEN_IDS,
-    )
-    # # Expansions for L1 cell types, cell type vs rest, not pseudobulked
-    # expand(
-    #   join(PROCESSED_DIR, "cell_type_vs_rest", "not_pseudobulked", "{cell_type_col}", "{cell_type}.csv"),
-    #   cell_type_col=["subclass_l1"],
-    #   cell_type=config["cell_types"]["subclass_l1"],
-    # ),
-    # # Expansions for L1 cell types, cell type vs rest, pseudobulked
-    # expand(
-    #   join(PROCESSED_DIR, "cell_type_vs_rest", "pseudobulked", "{cell_type_col}", "{cell_type}.csv"),
-    #   cell_type_col=["subclass_l1"],
-    #   cell_type=config["cell_types"]["subclass_l1"],
-    # ),
-    # # Expansions for L1 cell types, pairwise comparisons betwen sample groups (group_col, lhs_group, rhs_group), pseudobulked
-    # expand(
-    #   expand(
-    #     join(PROCESSED_DIR, "within_cell_type", "pseudobulked", "{sample_col}", "{lhs_group}", "{rhs_group}", "{{cell_type_col}}", "{{cell_type}}.csv"),
-    #     zip, # We use zip here to avoid combinatorial expansion, since we want to match the (sample_col, lhs_group, rhs_group) together as tuples.
-    #     sample_col=SAMPLE_GROUP_COLS,
-    #     lhs_group=SAMPLE_GROUP_LHSS,
-    #     rhs_group=SAMPLE_GROUP_RHSS,
-    #   ),
-    #   cell_type_col="subclass_l1",
-    #   cell_type=config["cell_types"]["subclass_l1"],
-    # )
-
-
+    join(INTERMEDIATE_DIR, "combined.subclass_l1.specimen.sum.pdata.h5ad")
 
 # TODO: rules for doing diff exp tests, for either .adata.h5ad or .pdata.h5ad files
 # This rule will produce the outputs required by the "all" rule.
-
-
-
-# TODO: rules for computing pseudobulks, outputing as .pdata.h5ad files
-
 
 
 # rule normalize_basic:
@@ -124,19 +87,30 @@ rule all:
 
 # Reference: https://www.sc-best-practices.org/conditions/differential_gene_expression.html#pseudobulk
 
-# rule combine_agg_splits: # TODO
+rule combine_splits:
+  input:
+    expand(
+      join(INTERMEDIATE_DIR, "{{cell_type_col}}.{cell_type_name_norm}.{{sample_id_col}}.{sample_id}.{{agg_func}}.agg.adata.h5ad"),
+      cell_type_name_norm=lambda w: [normalize_cell_type(ct) for ct in config["cell_types"][w.cell_type_col]],
+      sample_id=SPECIMEN_IDS,
+    )
+  output:
+    join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
+  script:
+    join(SCRIPTS_DIR, "combine_splits.py")
 
 
 rule aggregate_split:
   input:
     join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.filtered.adata.h5ad")
   output:
-    join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.agg.adata.h5ad")
+    join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.{agg_func}.agg.adata.h5ad")
   shell:
     """
     python scripts/agg_adata.py \
         --input-h5ad {input} \
-        --output-h5ad {output}
+        --output-h5ad {output} \
+        --agg-func {wildcards.agg_func}
     """
 
 # Take a map-reduce approach to pseudobulking.
