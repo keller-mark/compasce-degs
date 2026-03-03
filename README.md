@@ -27,6 +27,11 @@ and we can allow users to toggle between these results in the UI.
 
 When using the adjudicated sample categorizations, we want to aggregate the AKI subcategories of ATI and AIN (roll them up into a parent "AKI" category), since there are currently not enough samples for comparisons at the subcategory level to make sense.
 
+
+```sh
+snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime
+```
+
 # compasce
 
 <!--[![PyPI](https://img.shields.io/pypi/v/compasce)](https://pypi.org/project/compasce)-->

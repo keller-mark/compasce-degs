@@ -8,23 +8,66 @@ RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalDa
 CLEANED_H5AD_PATH = join(INTERMEDIATE_DIR, "cleaned.h5ad")
 NORMALIZED_H5AD_PATH = join(INTERMEDIATE_DIR, "normalized.h5ad")
 
+L1_CELL_TYPES = sorted(config["cell_types"]["subclass_l1"])
+L2_CELL_TYPES = sorted(config["cell_types"]["subclass_l2"])
+L3_CELL_TYPES = sorted(config["cell_types"]["subclass_l3"])
+
+def cell_type_name_to_index(cell_type_name, cell_type_col):
+  # Convert cell type name to index in config["cell_types"]["subclass_l1"], which
+  # is the order we use for the cell type columns in the .adata.h5ad files.
+  return config["cell_types"][cell_type_col].index(cell_type_name)
+
+def cell_type_index_to_name(cell_type_index, cell_type_col):
+  return config["cell_types"][cell_type_col][cell_type_index]
+  
+def normalize_cell_type(cell_type):
+    # Normalize cell type names to be filesystem-friendly, since we'll be using them in file paths.
+    return (
+      cell_type
+        .replace("/", "__slash__")
+        .replace(" ", "__space__")
+        .replace("+", "__plus__")
+        .replace("\xEF", "__i__")
+    )
+
+def unnormalize_cell_type(cell_type):
+    return (
+      cell_type
+        .replace("__slash__", "/")
+        .replace("__space__", " ")
+        .replace("__plus__", "+")
+        .replace("__i__", "\xEF")
+    )
+
+SPECIMEN_ID_COL = "specimen"
+SPECIMEN_IDS = sorted(config["specimen_ids"])
+
+def specimen_id_to_index(specimen_id):
+  return SPECIMEN_IDS.index(specimen_id)
+
+def index_to_specimen_id(specimen_id_index):
+  return SPECIMEN_IDS[specimen_id_index]
+
+NUM_SAMPLES_THRESHOLD = 3 # Min number of samples when using pseudobulked data
+NUM_CELLS_PER_SAMPLE_THRESHOLD = 25 # Min number of cells per sample when using pseudobulked data
+
 SAMPLE_GROUP_COLS = [ c["colname"] for c in config["sample_group_pairs"] ]
 SAMPLE_GROUP_LHSS = [ c["lhs"] for c in config["sample_group_pairs"] ]
 SAMPLE_GROUP_RHSS = [ c["rhs"] for c in config["sample_group_pairs"] ]
 
-UNIQUE_SAMPLE_GROUP_COLS = list(sorted(set(SAMPLE_GROUP_COLS)))
+UNIQUE_SAMPLE_GROUP_COLS = sorted(set(SAMPLE_GROUP_COLS))
 
-NUM_SAMPLES_THRESHOLD = 3 # Min number of samples when using pseudobulked data
-NUM_CELLS_PER_SAMPLE_THRESHOLD = 25 # Min number of cells per sample when using pseudobulked data
 
 # Rules
 rule all:
   input:
     CLEANED_H5AD_PATH,
     expand(
-      join(INTERMEDIATE_DIR, "{sample_group_col}_{cell_type_col}.pdata.h5ad"),
-      sample_group_col=UNIQUE_SAMPLE_GROUP_COLS,
+      join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.filtered.adata.h5ad"),
       cell_type_col=["subclass_l1"],
+      cell_type_name_norm=[normalize_cell_type(ct) for ct in config["cell_types"]["subclass_l1"]],
+      sample_id_col=["specimen"],
+      sample_id=SPECIMEN_IDS,
     )
     # # Expansions for L1 cell types, cell type vs rest, not pseudobulked
     # expand(
@@ -80,18 +123,43 @@ rule all:
 #     """
 
 # Reference: https://www.sc-best-practices.org/conditions/differential_gene_expression.html#pseudobulk
-rule pseudobulk:
+
+# rule combine_agg_splits: # TODO
+
+
+rule aggregate_split:
+  input:
+    join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.filtered.adata.h5ad")
+  output:
+    join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.agg.adata.h5ad")
+  shell:
+    """
+    python scripts/agg_adata.py \
+        --input-h5ad {input} \
+        --output-h5ad {output}
+    """
+
+# Take a map-reduce approach to pseudobulking.
+# In parallel, subset to each cell type and sample group as needed for the pseudobulk.
+# Do not yet aggregate, but this can be trivially done in follow-up steps that run in parallel.
+# In the individual split files, we could potentially save as dense feasibly as well.
+rule split_for_pseudobulk_by_cell_type_and_specimen_id:
   input:
     CLEANED_H5AD_PATH
   output:
-    join(INTERMEDIATE_DIR, "{sample_group_col}_{cell_type_col}.pdata.h5ad")
+    join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.filtered.adata.h5ad")
+  params:
+    cell_type_name_orig=lambda w: unnormalize_cell_type(w.cell_type_name_norm),
   shell:
     """
-    compasce \
-        --zarr-path {ZARR_PATH} \
-        --function-name "pseudobulk" \
+    python scripts/split_adata.py \
+        --input-h5ad {CLEANED_H5AD_PATH} \
+        --output-h5ad {output} \
+        --cell-type-col {wildcards.cell_type_col} \
+        --cell-type-name {params.cell_type_name_orig} \
+        --sample-id-col {SPECIMEN_ID_COL} \
+        --sample-id {wildcards.sample_id} \
     """
-
 
 rule convert_to_zarr:
   input:
