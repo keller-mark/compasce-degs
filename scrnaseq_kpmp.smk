@@ -48,8 +48,8 @@ def specimen_id_to_index(specimen_id):
 def index_to_specimen_id(specimen_id_index):
   return SPECIMEN_IDS[specimen_id_index]
 
-NUM_SAMPLES_THRESHOLD = 3 # Min number of samples when using pseudobulked data
-NUM_CELLS_PER_SAMPLE_THRESHOLD = 25 # Min number of cells per sample when using pseudobulked data
+NUM_SAMPLES_THRESHOLD = config["thresholds"]["min_samples_per_group"] # Min number of samples when using pseudobulked data
+NUM_CELLS_PER_SAMPLE_THRESHOLD = config["thresholds"]["min_cells_per_sample"] # Min number of cells per sample when using pseudobulked data
 
 SAMPLE_GROUP_COLS = [ c["colname"] for c in config["sample_group_pairs"] ]
 SAMPLE_GROUP_LHSS = [ c["lhs"] for c in config["sample_group_pairs"] ]
@@ -89,9 +89,9 @@ rule all:
 
 rule combine_splits:
   input:
-    expand(
+    lambda w: expand(
       join(INTERMEDIATE_DIR, "{{cell_type_col}}.{cell_type_name_norm}.{{sample_id_col}}.{sample_id}.{{agg_func}}.agg.adata.h5ad"),
-      cell_type_name_norm=lambda w: [normalize_cell_type(ct) for ct in config["cell_types"][w.cell_type_col]],
+      cell_type_name_norm=[normalize_cell_type(ct) for ct in config["cell_types"][w.cell_type_col]],
       sample_id=SPECIMEN_IDS,
     )
   output:
@@ -105,11 +105,17 @@ rule aggregate_split:
     join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.filtered.adata.h5ad")
   output:
     join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.{agg_func}.agg.adata.h5ad")
+  params:
+    cell_type_name_orig=lambda w: unnormalize_cell_type(w.cell_type_name_norm)
   shell:
     """
     python scripts/agg_adata.py \
         --input-h5ad {input} \
         --output-h5ad {output} \
+        --cell-type-col {wildcards.cell_type_col} \
+        --cell-type-name {params.cell_type_name_orig} \
+        --sample-id-col {wildcards.sample_id_col} \
+        --sample-id {wildcards.sample_id} \
         --agg-func {wildcards.agg_func}
     """
 
@@ -131,7 +137,7 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
         --output-h5ad {output} \
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name {params.cell_type_name_orig} \
-        --sample-id-col {SPECIMEN_ID_COL} \
+        --sample-id-col {wildcards.sample_id_col} \
         --sample-id {wildcards.sample_id} \
     """
 

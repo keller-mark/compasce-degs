@@ -2,7 +2,9 @@
 # to simplify parallelized processing in Snakemake workflows.
 # TODO: use alternative mechanisms like Snakemake Checkpoints to make this more dynamic,
 # getting the info directly from adata.uns where the metadata already exists.
-
+thresholds:
+  min_cells_per_sample: 25
+  min_samples_per_group: 3
 cell_types:
   subclass_l1:
   - Ad
