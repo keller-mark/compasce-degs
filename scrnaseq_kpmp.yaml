@@ -1,10 +1,15 @@
 # Listing of sample groupings and cell type groupings
 # to simplify parallelized processing in Snakemake workflows.
-# TODO: use alternative mechanisms like Snakemake Checkpoints to make this more dynamic,
-# getting the info directly from adata.uns where the metadata already exists.
+
+# Thresholds to use for comparisons. Below these, consider there to be insufficient data to make a comparison.
 thresholds:
+  # Min cells per cell type and sample.
   min_cells_per_sample: 25
+  # Min number of samples per sample group (e.g. AKI, CKD, Healthy Reference) for a given cell type to be included in comparisons.
   min_samples_per_group: 3
+
+# Use generate_yml.ipynb to construct the YAML lists that follow.
+# Ensure that the normalize/unnormalize functions in the Snakefile handle special characters.
 cell_types:
   subclass_l1:
   - Ad
