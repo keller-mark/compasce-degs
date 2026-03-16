@@ -6,6 +6,27 @@ import argparse
 
 NUM_CELLS_COLNAME = "num_cells_orig"
 
+def clean_deg_df(df):
+    # Rename the pds2.test_contrasts output to match scanpy's rank_genes_groups_df format
+    # Scanpy colnames = ["names", "scores", "logfoldchanges", "pvals", "pvals_adj"]
+    # References:
+    # - https://pertpy.readthedocs.io/en/stable/tutorials/notebooks/differential_gene_expression.html#differential-expression-testing-with-pydeseq2
+    # - https://scanpy.readthedocs.io/en/stable/generated/scanpy.get.rank_genes_groups_df.html
+    df = df.rename(columns={
+        "log_fc": "logfoldchanges",
+        "p_value": "pvals",
+        "adj_p_value": "pvals_adj",
+        # TODO: rename the other columns as well?
+        # baseMean
+        # lfcSE
+        # stat
+    })
+    df = df.sort_values(by="pvals_adj", ascending=True)
+    df = df.set_index("variable")
+    return df
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-h5ad", type=str, required=True, help = "Path to input H5AD file.")
@@ -58,13 +79,20 @@ if __name__ == "__main__":
     # Cell type vs rest
     pdata.obs["is_cell_type"] = pdata.obs[cell_type_col].apply(lambda x: cell_type if x == cell_type else "rest")
 
-    # For cell type vs. rest, we use a design such as "~subclass_l1"
-    # Reference: https://hbctraining.github.io/DGE_workshop/lessons/04_DGE_DESeq2_analysis.html
-    pds2 = pt.tl.PyDESeq2(adata=pdata, design=f"~is_cell_type")
-    pds2.fit()
+    has_rest_and_non_rest = pdata.obs["is_cell_type"].nunique() == 2
+    if not has_rest_and_non_rest:
+        print(f"Warning: after filtering, there are not at least 2 groups to compare for cell type {cell_type}. Skipping DE analysis for this cell type.")
+        empty_df = pd.DataFrame(columns=["variable", "logfoldchanges", "pvals", "pvals_adj"])
+        empty_df.to_csv(args.output_de_csv, index=False)
+    else:
+        # For cell type vs. rest, we use a design such as "~subclass_l1"
+        # Reference: https://hbctraining.github.io/DGE_workshop/lessons/04_DGE_DESeq2_analysis.html
+        pds2 = pt.tl.PyDESeq2(adata=pdata, design=f"~is_cell_type")
+        pds2.fit()
 
-    df = pds2.test_contrasts(pds2.contrast(column="is_cell_type", baseline="rest", group_to_compare=cell_type))
+        df = pds2.test_contrasts(pds2.contrast(column="is_cell_type", baseline="rest", group_to_compare=cell_type))
+        df = clean_deg_df(df)
 
-    print("Done with DE analysis, writing output CSV...")
+        print("Done with DE analysis, writing output CSV...")
 
-    df.to_csv(args.output_de_csv, index=True)
+        df.to_csv(args.output_de_csv, index=True)
