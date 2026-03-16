@@ -33,8 +33,13 @@ if __name__ == "__main__":
     parser.add_argument("--output-de-csv", type=str, required=True, help = "Path to output CSV file for DE results.")
     parser.add_argument("--output-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering results, for debugging.")
     parser.add_argument("--cell-type-col", type=str, required=True, help = "Name of cell type column")
-    parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
     parser.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
+    parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
+
+    parser.add_argument("--sample-group-col", type=str, required=True, help = "Name of sample group column")
+    parser.add_argument("--sample-group-lhs", type=str, required=True, help = "Left-hand side of sample group design (e.g. 'Primary Adjudicated Category')")
+    parser.add_argument("--sample-group-rhs", type=str, required=True, help = "Right-hand side of sample group design (e.g. 'AKI')")
+    
     parser.add_argument("--num-samples-threshold", type=int, required=True, help = "Min number of samples per group threshold")
     parser.add_argument("--num-cells-per-sample-threshold", type=int, required=True, help = "Min number of cells per sample threshold")
     
@@ -50,6 +55,17 @@ if __name__ == "__main__":
     cell_type_col = args.cell_type_col
     num_samples_threshold = args.num_samples_threshold
     num_cells_per_sample_threshold = args.num_cells_per_sample_threshold
+
+    sample_group_col = args.sample_group_col
+    sample_group_lhs = args.sample_group_lhs
+    sample_group_rhs = args.sample_group_rhs
+
+    # Filter to the current cell type
+    pdata = pdata[pdata.obs[cell_type_col] == cell_type].copy()
+
+    # Filter to the pair of sample groups
+    pdata = pdata[pdata.obs[sample_group_col].isin([sample_group_lhs, sample_group_rhs])].copy()
+
 
     # First filter based on number of cells per sample. We can use the "num_cells_orig" column that we set in agg_adata.py to do this filtering.
 
@@ -69,7 +85,7 @@ if __name__ == "__main__":
 
     # Save this filtering info and write for debugging
     # TODO: subset filtering df to only the current cell type? otherwise, all the output files are redundant.
-    filtering_by_num_cells_df = pdata.obs[["has_sufficient_num_cells", "has_sufficient_num_samples", cell_type_col, sample_id_col, NUM_CELLS_COLNAME]].copy()
+    filtering_by_num_cells_df = pdata.obs[["has_sufficient_num_cells", "has_sufficient_num_samples", cell_type_col, sample_id_col, sample_group_col, NUM_CELLS_COLNAME]].copy()
     filtering_by_num_cells_df.to_csv(args.output_filtering_csv, index=True)
     
     # Subset the anndata object.
@@ -77,21 +93,19 @@ if __name__ == "__main__":
 
     print(f"Filtered pdata shape: {pdata.shape}")
     
-    # Cell type vs rest
-    pdata.obs["is_cell_type"] = pdata.obs[cell_type_col].apply(lambda x: cell_type if x == cell_type else "rest")
-
-    has_rest_and_non_rest = pdata.obs["is_cell_type"].nunique() == 2
-    if not has_rest_and_non_rest:
-        print(f"Warning: after filtering, there are not at least 2 groups to compare for cell type {cell_type}. Skipping DE analysis for this cell type.")
+    # LHS vs RHS
+    has_lhs_and_rhs = pdata.obs[sample_group_col].nunique() == 2
+    if not has_lhs_and_rhs:
+        print(f"Warning: after filtering, there are not at least 2 groups to compare for cell type {cell_type} and {sample_group_col}: {sample_group_lhs} vs {sample_group_rhs}. Skipping DE analysis for this pair and cell type.")
         empty_df = pd.DataFrame(columns=["variable", "logfoldchanges", "pvals", "pvals_adj"])
         empty_df.to_csv(args.output_de_csv, index=False)
     else:
         # For cell type vs. rest, we use a design such as "~subclass_l1"
         # Reference: https://hbctraining.github.io/DGE_workshop/lessons/04_DGE_DESeq2_analysis.html
-        pds2 = pt.tl.PyDESeq2(adata=pdata, design=f"~is_cell_type")
+        pds2 = pt.tl.PyDESeq2(adata=pdata, design=f"~{sample_group_col}")
         pds2.fit()
 
-        df = pds2.test_contrasts(pds2.contrast(column="is_cell_type", baseline="rest", group_to_compare=cell_type))
+        df = pds2.test_contrasts(pds2.contrast(column=sample_group_col, baseline=sample_group_rhs, group_to_compare=sample_group_lhs))
         df = clean_deg_df(df)
 
         print("Done with DE analysis, writing output CSV...")

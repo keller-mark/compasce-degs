@@ -20,7 +20,7 @@ def cell_type_name_to_index(cell_type_name, cell_type_col):
 def cell_type_index_to_name(cell_type_index, cell_type_col):
   return config["cell_types"][cell_type_col][cell_type_index]
   
-def normalize_cell_type(cell_type):
+def normalize_identifier(cell_type):
     # Normalize cell type names to be filesystem-friendly, since we'll be using them in file paths.
     return (
       cell_type
@@ -30,7 +30,7 @@ def normalize_cell_type(cell_type):
         .replace("\xEF", "__i__")
     )
 
-def unnormalize_cell_type(cell_type):
+def unnormalize_identifier(cell_type):
     return (
       cell_type
         .replace("__slash__", "/")
@@ -63,13 +63,28 @@ rule all:
   input:
     CLEANED_H5AD_PATH,
     join(INTERMEDIATE_DIR, "combined.subclass_l1.specimen.sum.pdata.h5ad"),
+    # L1: Cell type vs rest
     expand(
       join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
       cell_type_col=["subclass_l1"],
-      cell_type_name_norm=[normalize_cell_type(ct) for ct in L1_CELL_TYPES],
+      cell_type_name_norm=[normalize_identifier(ct) for ct in L1_CELL_TYPES],
+      sample_id_col=[SPECIMEN_ID_COL],
+      agg_func=["sum"]
+    ),
+    # L1: Within cell type, case vs control
+    expand(
+      [
+        join(INTERMEDIATE_DIR, f"pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}.csv")
+        for c in config["sample_group_pairs"]
+      ],
+      cell_type_col=["subclass_l1"],
+      cell_type_name_norm=[normalize_identifier(ct) for ct in L1_CELL_TYPES],
       sample_id_col=[SPECIMEN_ID_COL],
       agg_func=["sum"]
     )
+      
+
+
 
 # TODO: rules for doing diff exp tests, for either .adata.h5ad or .pdata.h5ad files
 # This rule will produce the outputs required by the "all" rule.
@@ -94,6 +109,32 @@ rule all:
 
 # Reference: https://www.sc-best-practices.org/conditions/differential_gene_expression.html#pseudobulk
 
+rule pydeseq_within_celltype_case_vs_control:
+  input:
+    join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
+  output:
+    de_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv"),
+    filtering_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv")
+  params:
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
+    sample_group_lhs_orig=lambda w: unnormalize_identifier(w.sample_group_lhs_norm),
+    sample_group_rhs_orig=lambda w: unnormalize_identifier(w.sample_group_rhs_norm)
+  shell:
+    """
+    python scripts/60_pydeseq_within_celltype_case_vs_control.py \
+        --input-h5ad {input} \
+        --output-de-csv {output.de_df} \
+        --output-filtering-csv {output.filtering_df} \
+        --cell-type-col {wildcards.cell_type_col} \
+        --cell-type-name "{params.cell_type_name_orig}" \
+        --sample-id-col {wildcards.sample_id_col} \
+        --sample-group-col "{wildcards.sample_group_col}" \
+        --sample-group-lhs "{params.sample_group_lhs_orig}" \
+        --sample-group-rhs "{params.sample_group_rhs_orig}" \
+        --num-samples-threshold {NUM_SAMPLES_THRESHOLD} \
+        --num-cells-per-sample-threshold {NUM_CELLS_PER_SAMPLE_THRESHOLD}
+    """
+
 rule pydeseq_celltype_vs_rest:
   input:
     join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
@@ -101,7 +142,7 @@ rule pydeseq_celltype_vs_rest:
     de_df=join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
     filtering_df=join(INTERMEDIATE_DIR, "pydeseq_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
   params:
-    cell_type_name_orig=lambda w: unnormalize_cell_type(w.cell_type_name_norm)
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
   shell:
     """
     python scripts/50_pydeseq_celltype_vs_rest.py \
@@ -119,7 +160,7 @@ rule combine_splits:
   input:
     lambda w: expand(
       join(INTERMEDIATE_DIR, "{{cell_type_col}}.{cell_type_name_norm}.{{sample_id_col}}.{sample_id}.{{agg_func}}.agg.adata.h5ad"),
-      cell_type_name_norm=[normalize_cell_type(ct) for ct in config["cell_types"][w.cell_type_col]],
+      cell_type_name_norm=[normalize_identifier(ct) for ct in config["cell_types"][w.cell_type_col]],
       sample_id=SPECIMEN_IDS,
     )
   output:
@@ -134,7 +175,7 @@ rule aggregate_split:
   output:
     join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.{agg_func}.agg.adata.h5ad")
   params:
-    cell_type_name_orig=lambda w: unnormalize_cell_type(w.cell_type_name_norm)
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
   shell:
     """
     python scripts/20_agg_adata.py \
@@ -157,7 +198,7 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
   output:
     join(INTERMEDIATE_DIR, "{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_id}.filtered.adata.h5ad")
   params:
-    cell_type_name_orig=lambda w: unnormalize_cell_type(w.cell_type_name_norm),
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
   shell:
     """
     python scripts/10_split_adata.py \
