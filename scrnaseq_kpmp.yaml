@@ -274,6 +274,15 @@ sample_group_pairs:
 - colname: AdjudicatedCategory
   lhs: Acute Interstitial Nephritis
   rhs: Acute Tubular Injury
+- colname: MergedAdjudicatedCategory
+  lhs: AKI
+  rhs: Healthy Reference
+- colname: MergedAdjudicatedCategory
+  lhs: AKI
+  rhs: Diabetic Kidney Disease
+- colname: MergedAdjudicatedCategory
+  lhs: AKI
+  rhs: Hypertensive Kidney Disease
 patient_ids:
 - '3535'
 - KRP446

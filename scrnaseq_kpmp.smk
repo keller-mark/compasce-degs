@@ -63,6 +63,7 @@ rule all:
   input:
     CLEANED_H5AD_PATH,
     join(INTERMEDIATE_DIR, "combined.subclass_l1.specimen.sum.pdata.h5ad"),
+    # Subclass L1
     # L1: Cell type vs rest
     expand(
       join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
@@ -81,31 +82,29 @@ rule all:
       cell_type_name_norm=[normalize_identifier(ct) for ct in L1_CELL_TYPES],
       sample_id_col=[SPECIMEN_ID_COL],
       agg_func=["sum"]
+    ),
+    # Subclass L2
+    # L2: Cell type vs rest
+    expand(
+      join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
+      cell_type_col=["subclass_l2"],
+      cell_type_name_norm=[normalize_identifier(ct) for ct in L2_CELL_TYPES],
+      sample_id_col=[SPECIMEN_ID_COL],
+      agg_func=["sum"]
+    ),
+    # L2: Within cell type, case vs control
+    expand(
+      [
+        join(INTERMEDIATE_DIR, f"pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}.csv")
+        for c in config["sample_group_pairs"]
+      ],
+      cell_type_col=["subclass_l2"],
+      cell_type_name_norm=[normalize_identifier(ct) for ct in L2_CELL_TYPES],
+      sample_id_col=[SPECIMEN_ID_COL],
+      agg_func=["sum"]
     )
-      
 
 
-
-# TODO: rules for doing diff exp tests, for either .adata.h5ad or .pdata.h5ad files
-# This rule will produce the outputs required by the "all" rule.
-
-
-# rule normalize_basic:
-#   input:
-#     join_zdone(ZARR_PATH, "uns", "comparison_metadata")
-#   output:
-#     join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic")
-#   resources:
-#     slurm_partition="short",
-#     runtime=60*2, # 2 hours
-#     mem_mb=240_000, # 120 GB
-#     cpus_per_task=2
-#   shell:
-#     """
-#     compasce \
-#         --zarr-path {ZARR_PATH} \
-#         --function-name "normalize_basic"
-#     """
 
 # Reference: https://www.sc-best-practices.org/conditions/differential_gene_expression.html#pseudobulk
 
@@ -191,7 +190,7 @@ rule aggregate_split:
 # Take a map-reduce approach to pseudobulking.
 # In parallel, subset to each cell type and sample group as needed for the pseudobulk.
 # Do not yet aggregate, but this can be trivially done in follow-up steps that run in parallel.
-# In the individual split files, we could potentially save as dense feasibly as well.
+# (In the individual split files, we could potentially save as dense feasibly as well.)
 rule split_for_pseudobulk_by_cell_type_and_specimen_id:
   input:
     CLEANED_H5AD_PATH
@@ -210,7 +209,7 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
         --sample-id {wildcards.sample_id} \
     """
 
-rule convert_to_zarr:
+rule clean_h5ad:
   input:
     h5ad=join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad"),
     clinical=join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv"),

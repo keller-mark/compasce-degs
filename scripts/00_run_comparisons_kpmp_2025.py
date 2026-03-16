@@ -64,6 +64,19 @@ if __name__ == "__main__":
         adata.obs["AdjudicatedCategory"] = adata.obs.apply(clean_adjudicated_category, axis='columns')
         adata.obs["EnrollmentCategory"] = adata.obs["Enrollment Category"]
 
+        # TODO: expand all acronyms in the sample group names, to be consistent?
+
+        # When using the adjudicated sample categorizations,
+        # we want to aggregate the AKI subcategories of ATI and AIN (roll them up into a parent "AKI" category),
+        # since there are currently not enough samples for comparisons at the subcategory level to make sense.
+        # To do so, we add a new "MergedAdjudicatedCategory" column that merges ATI and AIN into AKI.
+        def merge_ati_and_ain(row):
+            if row["AdjudicatedCategory"] in ["Acute Tubular Injury", "Acute Interstitial Nephritis"]:
+                return "AKI"
+            else:
+                return row["AdjudicatedCategory"]
+        adata.obs["MergedAdjudicatedCategory"] = adata.obs.apply(merge_ati_and_ain, axis='columns')
+
         # TODO: process other clinical columns? Sex, age group, etc.
 
         adata.obs = adata.obs.rename(columns={"subclass.l1": "subclass_l1", "subclass.l2": "subclass_l2", "subclass.l3": "subclass_l3"})
@@ -77,6 +90,10 @@ if __name__ == "__main__":
         
         # Column names cannot contain slashes
         adata.obs = adata.obs.rename(columns=dict(zip(adata.obs.columns, [c.replace("/", " per ") for c in adata.obs.columns])))
+
+
+        
+
 
         # TODO: Use dask to convert the scipy.sparse array to a dense numpy array, to avoid this memory spike?
         # TODO: Also use LazyAnnData.put_da_to_zarr_layer to save the dense array?
@@ -121,6 +138,11 @@ if __name__ == "__main__":
         ('AdjudicatedCategory', ('Diabetic Kidney Disease', 'Hypertensive Kidney Disease')),
         # ATN vs. AIN
         ('AdjudicatedCategory', ('Acute Interstitial Nephritis', 'Acute Tubular Injury')),
+
+        # Merged AKI (ATI and AIN) vs. others
+        ('MergedAdjudicatedCategory', ('AKI', 'Healthy Reference')),
+        ('MergedAdjudicatedCategory', ('AKI', 'Diabetic Kidney Disease')),
+        ('MergedAdjudicatedCategory', ('AKI', 'Hypertensive Kidney Disease')),
 
         # TODO: use Diabetes History and Hypertension History columns here.
     ]
