@@ -12,6 +12,7 @@ if __name__ == "__main__":
     parser.add_argument("--input-csv", type=str, required=True, help = "Path to KPMP clinical data CSV file.")
     parser.add_argument("--input-deg-dir", type=str, required=True, help = "Path to folder containing precomputed DEG .txt files.")
     parser.add_argument("--output", type=str, required=True, help = "Path to output H5AD file")
+    parser.add_argument("--output-zarr", type=str, required=True, help = "Path to output Zarr directory")
     parser.add_argument("--subset", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--mem-limit", type=str, default='16GB', required=False)
     parser.add_argument("--overwrite", action=argparse.BooleanOptionalAction, default=False)
@@ -113,10 +114,11 @@ if __name__ == "__main__":
         # Reference: https://stackoverflow.com/questions/30416695/numpy-and-scipy-difference-between-todense-and-toarray
         
         # DO NOT CONVERT TO DENSE, KEEP AS SPARSE.
-        # adata.layers["counts"] = adata.layers["counts"].toarray()
+        # adata.layers["counts_dense"] = adata.layers["counts"].toarray()
 
         return adata
 
+    # TODO: get this info from the Snakemake config yaml file
     donor_id_col = "patient"
     sample_id_col = "specimen"
     sample_group_pairs = [
@@ -155,6 +157,7 @@ if __name__ == "__main__":
     run_all(
         get_adata,
         out_h5ad_path=args.output,
+        out_zarr_path=args.output_zarr,
         overwrite=args.overwrite,
         client=create_o2_dask_client(memory_limit=args.mem_limit),
         donor_id_col=donor_id_col,

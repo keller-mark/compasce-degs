@@ -8,7 +8,7 @@ from .io.lazy_anndata import create_lazy_anndata, create_sample_df
 from .io.comparison_metadata import MultiComparisonMetadata
 
 
-def run_all(get_adata, out_h5ad_path, overwrite=False, client=None, sample_id_col=None, donor_id_col=None, sample_group_pairs=None, cell_type_cols=None, stop_early=False, input_deg_dir=None):
+def run_all(get_adata, out_h5ad_path, out_zarr_path, overwrite=False, client=None, sample_id_col=None, donor_id_col=None, sample_group_pairs=None, cell_type_cols=None, stop_early=False, input_deg_dir=None):
     """
     def get_adata():
         return read_h5ad("path/to/adata.h5ad")
@@ -46,18 +46,29 @@ def run_all(get_adata, out_h5ad_path, overwrite=False, client=None, sample_id_co
 
     #del adata
 
-    sample_df = create_sample_df(adata, cm)
-    uns_key = all_cmp.append_df("uns", "samples", None, {
-        "obsType": "sample"
-    })
-    adata.uns[uns_key] = sample_df
-
     if stop_early:
         adata.uns["comparison_metadata"] = cm.serialize()
         # ladata.save(arr_path=["uns", "comparison_metadata"])
 
         adata.write_h5ad(out_h5ad_path)
-        return True
+
+        # Write to zarr
+        # Convert counts to dense
+        adata.layers["counts_dense"] = adata.layers["counts"].toarray()
+        ladata = create_lazy_anndata(adata, out_zarr_path, client=client, overwrite=overwrite)
+
+        del adata
+
+        sample_df = create_sample_df(ladata, cm)
+        uns_key = all_cmp.append_df("uns", "samples", None, {
+            "obsType": "sample"
+        })
+        ladata.uns[uns_key] = sample_df
+
+        ladata.uns["comparison_metadata"] = cm.serialize()
+        ladata.save(arr_path=["uns", "comparison_metadata"])
+
+        return ladata
     
     # TODO: for KPMP, fill in pre-processed differential expression results here? Or during the compute_diffexp step?
     # Or, just fill in at the end, after the normal pipeline has finished?
