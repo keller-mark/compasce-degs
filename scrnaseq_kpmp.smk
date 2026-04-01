@@ -64,6 +64,8 @@ rule all:
   input:
     CLEANED_H5AD_PATH,
     join(INTERMEDIATE_DIR, "combined.subclass_l1.specimen.sum.pdata.h5ad"),
+    # TODO: insert the zarr files for the normalized data and the densmap coordinates here; copy from the other repo.
+
     # Subclass L1
     # L1: Cell type vs rest
     expand(
@@ -114,6 +116,31 @@ rule all:
 
 # TODO: RULE TO INSERT PYDESEQ DATA INTO ZARR STORE WITH METADATA
 
+rule insert_celltype_vs_rest_degs:
+  input:
+    ladata=join_zdone(ZARR_PATH, "uns", "comparison_metadata"),
+    deg_results=join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
+  output:
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}")
+  params:
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
+  resources:
+    slurm_partition="short",
+    runtime=60, # 1 hour
+    mem_mb=32_000, # 32 GB
+    cpus_per_task=2
+  shell:
+    """
+    compasce \
+        --zarr-path {ZARR_PATH} \
+    insert_celltype_vs_rest_degs \
+        --csv-path {input.deg_results} \
+        --cell-type-col {wildcards.cell_type_col} \
+        --cell-type-name "{params.cell_type_name_orig}" \
+        --sample-id-col {wildcards.sample_id_col} \
+        --agg-func {wildcards.agg_func} \
+        --out-path {output}
+    """
 
 
 # Begin rules copied from https://github.com/keller-mark/compasce/blob/keller-mark/kpmp-nov-2025/scrnaseq_kpmp.smk
