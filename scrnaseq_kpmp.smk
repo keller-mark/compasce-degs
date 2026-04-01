@@ -406,7 +406,7 @@ rule clean_h5ad:
     protected(CLEANED_H5AD_PATH),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata")
   params:
-    subset_line=("--subset" if DEBUG_MODE else "")
+    subset_line=("--subset" if DEBUG_MODE else "--no-subset")
   resources:
     slurm_partition="short",
     runtime=60*2, # 2 hours
