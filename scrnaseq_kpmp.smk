@@ -1,14 +1,14 @@
 include: "./common.smk"
 configfile: "./scrnaseq_kpmp.yaml"
 
-DEBUG_MODE = True # TODO: SET TO FALSE
+DEBUG_MODE = False
 
 RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad")
 RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv")
 
 # Intermediate output paths
 CLEANED_H5AD_PATH = join(INTERMEDIATE_DIR, "cleaned.h5ad")
-ZARR_PATH = join(PROCESSED_DIR, "processed.h5ad.zarr")
+ZARR_PATH = join(PROCESSED_DIR, "kpmp-apr-2026.adata.zarr")
 NORMALIZED_H5AD_PATH = join(INTERMEDIATE_DIR, "normalized.h5ad")
 
 L1_CELL_TYPES = sorted(config["cell_types"]["subclass_l1"])
