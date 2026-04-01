@@ -1,6 +1,8 @@
 include: "./common.smk"
 configfile: "./scrnaseq_kpmp.yaml"
 
+DEBUG_MODE = True # TODO: SET TO FALSE
+
 RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad")
 RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv")
 
@@ -59,6 +61,13 @@ SAMPLE_GROUP_RHSS = [ c["rhs"] for c in config["sample_group_pairs"] ]
 UNIQUE_SAMPLE_GROUP_COLS = sorted(set(SAMPLE_GROUP_COLS))
 
 
+if DEBUG_MODE:
+    L1_CELL_TYPES = L1_CELL_TYPES[:5]
+    L2_CELL_TYPES = L2_CELL_TYPES[:5]
+    L3_CELL_TYPES = L3_CELL_TYPES[:5]
+    SPECIMEN_IDS = SPECIMEN_IDS[:5]
+
+
 # Rules
 rule all:
   input:
@@ -69,7 +78,9 @@ rule all:
     # Subclass L1
     # L1: Cell type vs rest
     expand(
-      join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
+      #join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
+      
+      join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}"),
       cell_type_col=["subclass_l1"],
       cell_type_name_norm=[normalize_identifier(ct) for ct in L1_CELL_TYPES],
       sample_id_col=[SPECIMEN_ID_COL],
@@ -78,7 +89,9 @@ rule all:
     # L1: Within cell type, case vs control
     expand(
       [
-        join(INTERMEDIATE_DIR, f"pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}.csv")
+        #join(INTERMEDIATE_DIR, f"pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}.csv")
+        
+        join_zdone(ZARR_PATH, "uns", f"comparison_metadata.pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}")
         for c in config["sample_group_pairs"]
       ],
       cell_type_col=["subclass_l1"],
@@ -114,7 +127,40 @@ rule all:
 
 
 
-# TODO: RULE TO INSERT PYDESEQ DATA INTO ZARR STORE WITH METADATA
+# RULES TO INSERT PYDESEQ RESULTS INTO ZARR STORE WITH METADATA
+
+# TODO: Insert these dataframes into the smaller PSEUDOBULKED anndata object, rather than the single-cell-resolution anndata object?
+
+rule insert_within_celltype_case_vs_control_degs:
+  input:
+    ladata=join_zdone(ZARR_PATH, "uns", "comparison_metadata"),
+    deg_results=join(INTERMEDIATE_DIR, "pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv")
+  output:
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}")
+  params:
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
+    sample_group_lhs_orig=lambda w: unnormalize_identifier(w.sample_group_lhs_norm),
+    sample_group_rhs_orig=lambda w: unnormalize_identifier(w.sample_group_rhs_norm)
+  resources:
+    slurm_partition="short",
+    runtime=60, # 1 hour
+    mem_mb=32_000, # 32 GB
+    cpus_per_task=2
+  shell:
+    """
+    compasce2 \
+        --zarr-path {ZARR_PATH} \
+    insert_within_celltype_case_vs_control_degs \
+        --csv-path {input.deg_results} \
+        --cell-type-col {wildcards.cell_type_col} \
+        --cell-type-name "{params.cell_type_name_orig}" \
+        --sample-id-col {wildcards.sample_id_col} \
+        --sample-group-col "{wildcards.sample_group_col}" \
+        --sample-group-lhs "{params.sample_group_lhs_orig}" \
+        --sample-group-rhs "{params.sample_group_rhs_orig}" \
+        --agg-func {wildcards.agg_func} \
+        --out-path {output}
+    """
 
 rule insert_celltype_vs_rest_degs:
   input:
@@ -131,7 +177,7 @@ rule insert_celltype_vs_rest_degs:
     cpus_per_task=2
   shell:
     """
-    compasce \
+    compasce2 \
         --zarr-path {ZARR_PATH} \
     insert_celltype_vs_rest_degs \
         --csv-path {input.deg_results} \
@@ -157,7 +203,7 @@ rule compute_diffabundance:
     cpus_per_task=2
   shell:
     """
-    compasce \
+    compasce2 \
         --zarr-path {ZARR_PATH} \
         --function-name "compute_diffabundance"
     """
@@ -175,7 +221,7 @@ rule densmap:
     cpus_per_task=4
   shell:
     """
-    compasce \
+    compasce2 \
         --zarr-path {ZARR_PATH} \
         --function-name "densmap"
     """
@@ -192,7 +238,7 @@ rule normalize_pearson_residuals:
     cpus_per_task=2
   shell:
     """
-    compasce \
+    compasce2 \
         --zarr-path {ZARR_PATH} \
         --function-name "normalize_pearson_residuals"
     """
@@ -209,7 +255,7 @@ rule normalize_basic:
     cpus_per_task=2
   shell:
     """
-    compasce \
+    compasce2 \
         --zarr-path {ZARR_PATH} \
         --function-name "normalize_basic"
     """
@@ -357,6 +403,8 @@ rule clean_h5ad:
   output:
     protected(CLEANED_H5AD_PATH),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata")
+  params:
+    subset_line=("--subset" if DEBUG_MODE else "")
   resources:
     slurm_partition="short",
     runtime=60*2, # 2 hours
@@ -370,7 +418,7 @@ rule clean_h5ad:
         --input-deg-dir {input.deg_dir} \
         --output {CLEANED_H5AD_PATH} \
         --output-zarr {ZARR_PATH} \
-        --stop-early
+        --stop-early {params.subset_line}
     """
 
 # No download rule:

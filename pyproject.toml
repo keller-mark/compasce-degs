@@ -65,7 +65,7 @@ repository = "https://github.com/keller-mark/compasce-degs"
 
 
 [project.scripts]
-compasce = "compasce_degs.pipeline_cli:run_cli"
+compasce2 = "compasce_degs.pipeline_cli:run_cli"
 
 
 # Reference: https://stackoverflow.com/a/74421415

@@ -81,7 +81,10 @@ if __name__ == "__main__":
             .nunique()
     )
 
-    pdata.obs["has_sufficient_num_samples"] = pdata.obs.apply(lambda row: num_samples_per_cell_type[row[cell_type_col]] >= num_samples_threshold, axis=1)
+    pdata.obs["has_sufficient_num_samples"] = pdata.obs[cell_type_col].apply(lambda cell_type_val: num_samples_per_cell_type[cell_type_val] >= num_samples_threshold)
+    
+    pdata.obs["has_sufficient_num_samples"] = pdata.obs["has_sufficient_num_samples"].astype(bool)
+    pdata.obs["has_sufficient_num_cells"] = pdata.obs["has_sufficient_num_cells"].astype(bool)
 
     # Save this filtering info and write for debugging
     # TODO: subset filtering df to only the current cell type? otherwise, all the output files are redundant.
