@@ -73,7 +73,11 @@ rule all:
   input:
     CLEANED_H5AD_PATH,
     join(INTERMEDIATE_DIR, "combined.subclass_l1.specimen.sum.pdata.h5ad"),
-    # TODO: insert the zarr files for the normalized data and the densmap coordinates here; copy from the other repo.
+    
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic"),
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_pearson_residuals"),
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.densmap"),
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.compute_diffabundance"),
 
     # Subclass L1
     # L1: Cell type vs rest
