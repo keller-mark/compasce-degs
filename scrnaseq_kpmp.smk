@@ -91,7 +91,7 @@ rule all:
       [
         #join(INTERMEDIATE_DIR, f"pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}.csv")
         
-        join_zdone(ZARR_PATH, "uns", f"comparison_metadata.pydeseq_within_celltype.{{{cell_type_col}}}.{{{cell_type_name_norm}}}.{{{sample_id_col}}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{{agg_func}}}")
+        join_zdone(ZARR_PATH, "uns", f"comparison_metadata.pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}")
         for c in config["sample_group_pairs"]
       ],
       cell_type_col=["subclass_l1"],
