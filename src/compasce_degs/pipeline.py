@@ -54,7 +54,7 @@ def run_all(get_adata, out_h5ad_path, out_zarr_path, overwrite=False, client=Non
 
         # Write to zarr
         # Convert counts to dense
-        adata.layers["counts_dense"] = adata.layers["counts"].toarray()
+        adata.layers["counts"] = adata.layers["counts"].toarray()
         ladata = create_lazy_anndata(adata, out_zarr_path, client=client, overwrite=overwrite)
 
         del adata

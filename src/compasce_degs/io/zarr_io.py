@@ -125,7 +125,7 @@ def dispatched_write_zarr(adata, out_path, var_chunk_size=5, arr_path=None, mode
 
     old_delitem = z.__class__.__delitem__
     def patched_delitem(self, item):
-        if item == "/layers" or item == "/obsm" or item == "/uns" or item.startswith("/uns/comparison_metadata"):
+        if item == "/layers" or item == "/obsm" or item == "/obs" or item == "/var" or item == "/uns" or item.startswith("/uns/comparison_metadata"):
             pass
         else:
             print(f"Deleting {item}")
