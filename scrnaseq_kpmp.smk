@@ -198,8 +198,7 @@ rule insert_celltype_vs_rest_degs:
 # Begin rules copied from https://github.com/keller-mark/compasce/blob/keller-mark/kpmp-nov-2025/scrnaseq_kpmp.smk
 rule compute_diffabundance:
   input:
-    join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic"),
-    join_zdone(ZARR_PATH, "uns", "comparison_metadata.compute_diffexp_pydeseq2") # TEMP
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic")
   output:
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.compute_diffabundance")
   resources:
@@ -216,8 +215,7 @@ rule compute_diffabundance:
 
 rule densmap:
   input:
-    join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic"),
-    join_zdone(ZARR_PATH, "uns", "comparison_metadata.compute_diffexp_pydeseq2") # TEMP
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic")
   output:
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.densmap")
   resources:
