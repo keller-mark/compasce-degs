@@ -315,6 +315,18 @@ export SLURM_ACCOUNT=$(sshare -u mk596 -U | cut -d ' ' -f 1 | tail -n 1)
 snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
+
+# Or
+
+snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
+  --keep-incomplete --keep-going --latency-wait 30 --slurm \
+  --omit-from insert_celltype_vs_rest_degs --omit-from insert_within_celltype_case_vs_control_degs \
+  --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
+
+# Run the insertion stuff one-by-one
+snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
+  --keep-incomplete --keep-going --latency-wait 30 --slurm \
+  --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
 ```
 
 Upload to S3:

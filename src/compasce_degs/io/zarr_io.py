@@ -8,6 +8,7 @@ from anndata import AnnData
 from anndata._io.zarr import read_dataframe, _read_legacy_raw, _clean_uns
 from anndata.experimental import read_dispatched, write_dispatched, read_elem
 from dask.distributed import progress
+from filelock import SoftFileLock
 
 def try_cast_arr(arr):
     if isinstance(arr, np.ndarray) or isinstance(arr, da.Array) or isinstance(arr, zarr.Array):
@@ -116,26 +117,28 @@ def dispatched_write_zarr(adata, out_path, var_chunk_size=5, arr_path=None, mode
             except zarr.errors.ContainsArrayError:
                 print(f"zarr.errors.ContainsArrayError at {k}")
 
-    z = zarr.open(out_path, mode=mode)
+    zarr_dir_lock = SoftFileLock(f"{out_path}.lock", poll_interval=1.0)
+    with zarr_dir_lock:
+        z = zarr.open(out_path, mode=mode)
 
-    # Monkey patch the clear method to prevent clearing the root group
-    # Reference: https://github.com/scverse/anndata/blob/1461fecd1712eefb1e5a5c0a75547b0e169a23d5/src/anndata/_io/specs/registry.py#L299C1-L299C26
-    old_clear = z.clear
-    z.clear = (lambda: None) # Do not allow clearing the root group
+        # Monkey patch the clear method to prevent clearing the root group
+        # Reference: https://github.com/scverse/anndata/blob/1461fecd1712eefb1e5a5c0a75547b0e169a23d5/src/anndata/_io/specs/registry.py#L299C1-L299C26
+        old_clear = z.clear
+        z.clear = (lambda: None) # Do not allow clearing the root group
 
-    old_delitem = z.__class__.__delitem__
-    def patched_delitem(self, item):
-        if item == "/layers" or item == "/obsm" or item == "/obs" or item == "/var" or item == "/uns" or item.startswith("/uns/comparison_metadata"):
-            pass
-        else:
-            print(f"Deleting {item}")
-            old_delitem(self, item)
-    z.__class__.__delitem__ = patched_delitem
+        old_delitem = z.__class__.__delitem__
+        def patched_delitem(self, item):
+            if item == "/layers" or item == "/obsm" or item == "/obs" or item == "/var" or item == "/uns" or item.startswith("/uns/comparison_metadata"):
+                pass
+            else:
+                print(f"Deleting {item}")
+                old_delitem(self, item)
+        z.__class__.__delitem__ = patched_delitem
 
-    write_dispatched(z, "/", adata, callback=write_chunked)
-    # Restore (though not really necessary)
-    z.clear = old_clear
-    z.__class__.__delitem__ = old_delitem
+        write_dispatched(z, "/", adata, callback=write_chunked)
+        # Restore (though not really necessary)
+        z.clear = old_clear
+        z.__class__.__delitem__ = old_delitem
 
-    write_zdone(out_path, arr_path=arr_path)
+        write_zdone(out_path, arr_path=arr_path)
 
