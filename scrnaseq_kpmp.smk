@@ -149,8 +149,8 @@ rule insert_within_celltype_case_vs_control_degs:
     sample_group_rhs_orig=lambda w: unnormalize_identifier(w.sample_group_rhs_norm)
   resources:
     slurm_partition="short",
-    runtime=60, # 1 hour
-    mem_mb=32_000, # 32 GB
+    runtime=30, # half hour
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -178,8 +178,8 @@ rule insert_celltype_vs_rest_degs:
     cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
   resources:
     slurm_partition="short",
-    runtime=60, # 1 hour
-    mem_mb=32_000, # 32 GB
+    runtime=30, # half hour
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -284,7 +284,7 @@ rule pydeseq_within_celltype_case_vs_control:
   resources:
     slurm_partition="short",
     runtime=60, # 1 hour
-    mem_mb=32_000, # 32 GB
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -313,7 +313,7 @@ rule pydeseq_celltype_vs_rest:
   resources:
     slurm_partition="short",
     runtime=60, # 1 hour
-    mem_mb=32_000, # 32 GB
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -339,8 +339,8 @@ rule combine_splits:
     protected(join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad"))
   resources:
     slurm_partition="short",
-    runtime=60, # 1 hour
-    mem_mb=32_000, # 32 GB
+    runtime=30, # half hour
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   script:
     join(SCRIPTS_DIR, "30_combine_splits.py")
@@ -355,8 +355,8 @@ rule aggregate_split:
     cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
   resources:
     slurm_partition="short",
-    runtime=60, # 1 hour
-    mem_mb=32_000, # 32 GB
+    runtime=30, # half hour
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -383,8 +383,8 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
     cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
   resources:
     slurm_partition="short",
-    runtime=60, # 1 hour
-    mem_mb=64_000, # 64 GB
+    runtime=30, # half hour
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
     """
