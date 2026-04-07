@@ -149,7 +149,7 @@ rule insert_within_celltype_case_vs_control_degs:
     sample_group_rhs_orig=lambda w: unnormalize_identifier(w.sample_group_rhs_norm)
   resources:
     slurm_partition="short",
-    runtime=30, # half hour
+    runtime=60, # half hour
     mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
@@ -178,7 +178,7 @@ rule insert_celltype_vs_rest_degs:
     cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
   resources:
     slurm_partition="short",
-    runtime=30, # half hour
+    runtime=60, # half hour
     mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
