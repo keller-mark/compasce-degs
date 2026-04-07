@@ -18,6 +18,10 @@ def try_cast_arr(arr):
     return arr
 
 def dispatched_read_zarr(store):
+
+    # Note: The value of store is always the string path to the Zarr directory.
+    zarr_dir_lock = SoftFileLock(f"{store}.lock", poll_interval=1.0)
+
     # Function that reads an AnnData object from a Zarr store but omits certain keys.
     # Adapted from https://github.com/scverse/anndata/blob/1461fecd1712eefb1e5a5c0a75547b0e169a23d5/src/anndata/_io/zarr.py#L51
     if isinstance(store, zarr.Group):
@@ -27,36 +31,38 @@ def dispatched_read_zarr(store):
 
     # Read with handling for backwards compat
     def callback(func, elem_name: str, elem, iospec):
-        #print(f"Reading {elem_name}")
-        if elem_name == "/X":
-            return None
-        if elem_name == "/raw":
-            return None
+        # Lock on the zarr directory for any read operations.
+        with zarr_dir_lock:
+            #print(f"Reading {elem_name}")
+            if elem_name == "/X":
+                return None
+            if elem_name == "/raw":
+                return None
 
-        if elem_name == "/layers" or elem_name == "/obsm":
-            # We want to trick the anndata read_basic_zarr function into thinking that this Zarr group
-            # only contains a subset of keys.
-            # Reference: https://github.com/scverse/anndata/blob/1461fecd1712eefb1e5a5c0a75547b0e169a23d5/src/anndata/_io/specs/methods.py#L145
-            elem = {}
+            if elem_name == "/layers" or elem_name == "/obsm":
+                # We want to trick the anndata read_basic_zarr function into thinking that this Zarr group
+                # only contains a subset of keys.
+                # Reference: https://github.com/scverse/anndata/blob/1461fecd1712eefb1e5a5c0a75547b0e169a23d5/src/anndata/_io/specs/methods.py#L145
+                elem = {}
 
-        if iospec.encoding_type == "anndata" or elem_name.endswith("/"):
-            return AnnData(
-                **{
-                    k: read_dispatched(v, callback)
-                    for k, v in elem.items()
-                    if not k.startswith("raw.")
-                }
-            )
-        elif elem_name.startswith("/raw."):
-            return None
-        elif elem_name in {"/obs", "/var"}:
-            return read_dataframe(elem)
-        #elif elem_name == "/raw":
-            # Backwards compat
-        #    return _read_legacy_raw(f, func(elem), read_dataframe, func)
-        
-        return func(elem)
-
+            if iospec.encoding_type == "anndata" or elem_name.endswith("/"):
+                return AnnData(
+                    **{
+                        k: read_dispatched(v, callback)
+                        for k, v in elem.items()
+                        if not k.startswith("raw.")
+                    }
+                )
+            elif elem_name.startswith("/raw."):
+                return None
+            elif elem_name in {"/obs", "/var"}:
+                return read_dataframe(elem)
+            #elif elem_name == "/raw":
+                # Backwards compat
+            #    return _read_legacy_raw(f, func(elem), read_dataframe, func)
+            
+            return func(elem)
+    
     adata = read_dispatched(f, callback=callback)
 
     # Backwards compat (should figure out which version)
