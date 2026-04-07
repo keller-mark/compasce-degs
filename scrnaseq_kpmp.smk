@@ -284,7 +284,7 @@ rule pydeseq_within_celltype_case_vs_control:
   resources:
     slurm_partition="short",
     runtime=60, # 1 hour
-    mem_mb=16_000, # 16 GB
+    mem_mb=32_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -313,7 +313,7 @@ rule pydeseq_celltype_vs_rest:
   resources:
     slurm_partition="short",
     runtime=60, # 1 hour
-    mem_mb=16_000, # 16 GB
+    mem_mb=32_000, # 16 GB
     cpus_per_task=2
   shell:
     """
