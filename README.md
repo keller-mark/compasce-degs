@@ -327,6 +327,11 @@ snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
 snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
+
+
+# Finally: merge the metadata
+export ZARR_PATH=/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis/processed/kpmp-apr-2026.adata.zarr
+uv run scripts/99_merge_metadata.py --zarr-path $ZARR_PATH
 ```
 
 Upload to S3:
