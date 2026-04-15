@@ -330,6 +330,11 @@ snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
 
 
 # Finally: merge the metadata
+srun -p interactive --pty -t 2:00:00 -n 2 --mem 32G bash
+# source ~/.bashrc_mark
+# ssh-add ~/.ssh/
+# source .venv/bin/activate
+
 export ZARR_PATH=/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis/processed/kpmp-apr-2026.adata.zarr
 uv run scripts/99_merge_metadata.py --zarr-path $ZARR_PATH
 ```
