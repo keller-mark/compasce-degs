@@ -31,7 +31,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-h5ad", type=str, required=True, help = "Path to input H5AD file.")
     parser.add_argument("--output-de-csv", type=str, required=True, help = "Path to output CSV file for DE results.")
-    parser.add_argument("--output-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering results, for debugging.")
+    parser.add_argument("--output-obs-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering obs results, for debugging.")
+    parser.add_argument("--output-var-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering var results, for debugging.")
     parser.add_argument("--cell-type-col", type=str, required=True, help = "Name of cell type column")
     parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
     parser.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
@@ -73,10 +74,23 @@ if __name__ == "__main__":
     # Save this filtering info and write for debugging
     # TODO: subset filtering df to only the current cell type? otherwise, all the output files are redundant.
     filtering_by_num_cells_df = pdata.obs[["has_sufficient_num_cells", "has_sufficient_num_samples", cell_type_col, sample_id_col, NUM_CELLS_COLNAME]].copy()
-    filtering_by_num_cells_df.to_csv(args.output_filtering_csv, index=True)
+    filtering_by_num_cells_df.to_csv(args.output_obs_filtering_csv, index=True)
     
     # Subset the anndata object.
     pdata = pdata[pdata.obs["has_sufficient_num_cells"] & pdata.obs["has_sufficient_num_samples"]].copy()
+
+    # Filter along var: remove genes not expressed (count > 0) in at least 50% of pseudobulked samples.
+    n_samples = pdata.X.shape[0]
+    num_expressed = np.asarray((pdata.X > 0).sum(axis=0)).flatten()
+    frac_expressed = num_expressed / n_samples
+    var_mask = frac_expressed >= 0.5
+
+    filtering_by_var_df = pdata.var.copy()
+    filtering_by_var_df["frac_expressed"] = frac_expressed
+    filtering_by_var_df["is_expressed_in_sufficient_samples"] = var_mask
+    filtering_by_var_df.to_csv(args.output_var_filtering_csv, index=True)
+
+    pdata = pdata[:, var_mask].copy()
 
     print(f"Filtered pdata shape: {pdata.shape}")
     

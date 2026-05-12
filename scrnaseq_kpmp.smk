@@ -276,7 +276,8 @@ rule pydeseq_within_celltype_case_vs_control:
     join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
   output:
     de_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv"),
-    filtering_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv")
+    obs_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype_obs_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv"),
+    var_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype_var_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv")
   params:
     cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
     sample_group_lhs_orig=lambda w: unnormalize_identifier(w.sample_group_lhs_norm),
@@ -291,7 +292,8 @@ rule pydeseq_within_celltype_case_vs_control:
     python scripts/60_pydeseq_within_celltype_case_vs_control.py \
         --input-h5ad {input} \
         --output-de-csv {output.de_df} \
-        --output-filtering-csv {output.filtering_df} \
+        --output-obs-filtering-csv {output.obs_filtering_df} \
+        --output-var-filtering-csv {output.var_filtering_df} \
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name "{params.cell_type_name_orig}" \
         --sample-id-col {wildcards.sample_id_col} \
@@ -307,7 +309,8 @@ rule pydeseq_celltype_vs_rest:
     join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
   output:
     de_df=join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
-    filtering_df=join(INTERMEDIATE_DIR, "pydeseq_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
+    obs_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_obs_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
+    var_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_var_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
   params:
     cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
   resources:
@@ -320,7 +323,8 @@ rule pydeseq_celltype_vs_rest:
     python scripts/50_pydeseq_celltype_vs_rest.py \
         --input-h5ad {input} \
         --output-de-csv {output.de_df} \
-        --output-filtering-csv {output.filtering_df} \
+        --output-obs-filtering-csv {output.obs_filtering_df} \
+        --output-var-filtering-csv {output.var_filtering_df} \
         --sample-id-col {wildcards.sample_id_col} \
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name "{params.cell_type_name_orig}" \

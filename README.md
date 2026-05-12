@@ -346,7 +346,7 @@ srun -p interactive --pty -t 4:00:00 -n 1 --mem 16G bash
 # ssh-add
 cd ~/lab/scmd-analysis/processed
 
-aws s3 cp kpmp-aug-2025.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-aug-2025.adata.zarr --recursive
+aws s3 cp kpmp-apr-2026.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-apr-2026.adata.zarr --recursive
 
 ```
 

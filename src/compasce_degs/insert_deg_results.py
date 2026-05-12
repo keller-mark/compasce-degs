@@ -68,8 +68,8 @@ def insert_within_celltype_case_vs_control_degs(
     uns_key = cmp.append_df("uns", "pydeseq2", {
         "contrast": {
             "column": "cell_type_sample_group",
-            "baseline": f"{cell_type_name}_{sample_group_lhs}",
-            "group_to_compare": f"{cell_type_name}_{sample_group_rhs}",
+            "baseline": f"{cell_type_name}_{sample_group_rhs}",
+            "group_to_compare": f"{cell_type_name}_{sample_group_lhs}",
         },
         "is_empty": is_empty,
     }, {
