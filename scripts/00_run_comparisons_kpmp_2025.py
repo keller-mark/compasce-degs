@@ -51,6 +51,17 @@ if __name__ == "__main__":
 
         adata.obs["Primary Adjudicated Category"] = adata.obs["Primary Adjudicated Category"].fillna("NA")
 
+        # Cleanup of Enrollment Category for healthy reference to exclude certain Sample Type values.
+        def clean_enrollment_category(row):
+            if row["Enrollment Category"] == "Healthy Reference":
+                healthy_sample_type = row["Sample Type"]
+                if healthy_sample_type in ["Tumor Nephrectomy", "Total Tumor Nephrectomy", "Partial Tumor Nephrectomy", "Deceased Donor Nephrectomy"]:
+                    # Append the Sample Type, which will result in this row not matching the plain "Healthy Reference" class.
+                    return f"{row['Enrollment Category']} - {row['Sample Type']}"
+                # The other healthy sample types are: "Transplant Pre-perfusion Biopsy", "Intra-operative Biopsy" (HRT Percutaneous Nephrolithotomy Protocol i.e. kidney stone).
+                # We want these types of healthy sample types to correspond to "Healthy Reference" (no suffix).
+            return row["Enrollment Category"]
+
         # Cleanup of sample-level data
         def clean_adjudicated_category(row):
             if row["Primary Adjudicated Category"] != "NA":
@@ -63,7 +74,7 @@ if __name__ == "__main__":
                     return "Healthy Reference"
                 return ""
         adata.obs["AdjudicatedCategory"] = adata.obs.apply(clean_adjudicated_category, axis='columns')
-        adata.obs["EnrollmentCategory"] = adata.obs["Enrollment Category"]
+        adata.obs["EnrollmentCategory"] = adata.obs.apply(clean_enrollment_category, axis='columns')
 
         # TODO: expand all acronyms in the sample group names, to be consistent?
 
@@ -81,19 +92,19 @@ if __name__ == "__main__":
         # TODO: process other clinical columns? Sex, age group, etc.
 
         adata.obs = adata.obs.rename(columns={"subclass.l1": "subclass_l1", "subclass.l2": "subclass_l2", "subclass.l3": "subclass_l3"})
-        
+
         for colname in adata.obs.columns:
             if pd.api.types.is_string_dtype(adata.obs[colname]) or str(adata.obs[colname].dtype) == "object":
                 print(f"Filling NAs in string column {colname} with 'NA'")
                 adata.obs[colname] = adata.obs[colname].fillna("NA")
             else:
                 print(f"Not filling NAs in non-string column {colname} of type {adata.obs[colname].dtype}")
-        
+
         # Column names cannot contain slashes
         adata.obs = adata.obs.rename(columns=dict(zip(adata.obs.columns, [c.replace("/", " per ") for c in adata.obs.columns])))
 
 
-        
+
 
 
         # TODO: Use dask to convert the scipy.sparse array to a dense numpy array, to avoid this memory spike?
@@ -112,7 +123,7 @@ if __name__ == "__main__":
         # )
 
         # Reference: https://stackoverflow.com/questions/30416695/numpy-and-scipy-difference-between-todense-and-toarray
-        
+
         # DO NOT CONVERT TO DENSE, KEEP AS SPARSE.
         # adata.layers["counts_dense"] = adata.layers["counts"].toarray()
 
@@ -147,6 +158,9 @@ if __name__ == "__main__":
         ('MergedAdjudicatedCategory', ('AKI', 'Hypertensive Kidney Disease')),
 
         # TODO: use Diabetes History and Hypertension History columns here.
+
+        # TODO: For healthy: Define as HRT samples from KPMP AND (either kidney stone or pre-perfusion biopsies).
+        # I.e., exclude tumor nephrectomies from healthy. Exclude non-KPMP biopsies.
     ]
     cell_type_cols = [
         "subclass_l3",

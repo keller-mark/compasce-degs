@@ -38,7 +38,7 @@ if __name__ == "__main__":
     parser.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
     parser.add_argument("--num-samples-threshold", type=int, required=True, help = "Min number of samples per group threshold")
     parser.add_argument("--num-cells-per-sample-threshold", type=int, required=True, help = "Min number of cells per sample threshold")
-    
+
     args = parser.parse_args()
 
     pdata = read_h5ad(args.input_h5ad)
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     # For each cell type, count the number of unique sample IDs that have sufficient number of cells,
     # and filter out cell types that don't have at least `num_samples_threshold` samples with sufficient number of cells.
-    
+
     num_samples_per_cell_type = (
         pdata.obs[pdata.obs["has_sufficient_num_cells"]]
             .groupby(cell_type_col)[sample_id_col]
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     # TODO: subset filtering df to only the current cell type? otherwise, all the output files are redundant.
     filtering_by_num_cells_df = pdata.obs[["has_sufficient_num_cells", "has_sufficient_num_samples", cell_type_col, sample_id_col, NUM_CELLS_COLNAME]].copy()
     filtering_by_num_cells_df.to_csv(args.output_obs_filtering_csv, index=True)
-    
+
     # Subset the anndata object.
     pdata = pdata[pdata.obs["has_sufficient_num_cells"] & pdata.obs["has_sufficient_num_samples"]].copy()
 
@@ -85,6 +85,8 @@ if __name__ == "__main__":
     frac_expressed = num_expressed / n_samples
     var_mask = frac_expressed >= 0.5
 
+    # TODO: also manually (via regex) remove "AC" and "AL"-prefixed genes?
+
     filtering_by_var_df = pdata.var.copy()
     filtering_by_var_df["frac_expressed"] = frac_expressed
     filtering_by_var_df["is_expressed_in_sufficient_samples"] = var_mask
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     pdata = pdata[:, var_mask].copy()
 
     print(f"Filtered pdata shape: {pdata.shape}")
-    
+
     # Cell type vs rest
     pdata.obs["is_cell_type"] = pdata.obs[cell_type_col].apply(lambda x: cell_type if x == cell_type else "rest")
 
