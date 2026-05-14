@@ -344,7 +344,7 @@ rule combine_splits:
   resources:
     slurm_partition="short",
     runtime=30, # half hour
-    mem_mb=16_000, # 16 GB
+    mem_mb=32_000, # 16 GB
     cpus_per_task=2
   script:
     join(SCRIPTS_DIR, "30_combine_splits.py")
