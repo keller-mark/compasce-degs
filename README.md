@@ -359,24 +359,20 @@ snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
 
 
 # Finally: merge the metadata
-srun -p interactive --pty -t 2:00:00 -n 2 --mem 32G bash
+srun -p interactive --pty -t 4:00:00 -n 2 --mem 32G bash
 # source ~/.bashrc_mark
 # ssh-add ~/.ssh/
 # source .venv/bin/activate
 
 export ZARR_PATH=/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis/processed/kpmp-apr-2026.adata.zarr
 uv run scripts/99_merge_metadata.py --zarr-path $ZARR_PATH
-```
 
-Upload to S3:
-```sh
-srun -p interactive --pty -t 4:00:00 -n 1 --mem 16G bash
-# source ~/.bashrc_mark
-# ssh-add
+# Upload to S3:
 cd ~/lab/scmd-analysis/processed
 
-aws s3 cp kpmp-apr-2026.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-apr-2026.adata.zarr --recursive
+# Set AWS env vars
 
+aws s3 cp kpmp-apr-2026.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-may-2026.adata.zarr --recursive
 ```
 
 
