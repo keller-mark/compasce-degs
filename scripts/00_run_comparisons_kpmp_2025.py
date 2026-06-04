@@ -70,11 +70,14 @@ if __name__ == "__main__":
                 # The row was empty, so perhaps this sample has not yet been adjudicated.
                 # However, we also need to check that this was not a "Healthy Reference" sample,
                 # as these never go through the adjudication process.
-                if row["Enrollment Category"] in ["Healthy Reference"]:
+                if row["EnrollmentCategory"] in ["Healthy Reference"]:
                     return "Healthy Reference"
                 return ""
-        adata.obs["AdjudicatedCategory"] = adata.obs.apply(clean_adjudicated_category, axis='columns')
+        
+        # Note: we clean enrollment category first, as the adjudicated category cleaning depends on the cleaned enrollment category values.
         adata.obs["EnrollmentCategory"] = adata.obs.apply(clean_enrollment_category, axis='columns')
+        adata.obs["AdjudicatedCategory"] = adata.obs.apply(clean_adjudicated_category, axis='columns')
+        
 
         # TODO: expand all acronyms in the sample group names, to be consistent?
 
