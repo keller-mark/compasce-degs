@@ -53,6 +53,8 @@ def index_to_specimen_id(specimen_id_index):
 
 NUM_SAMPLES_THRESHOLD = config["thresholds"]["min_samples_per_group"] # Min number of samples when using pseudobulked data
 NUM_CELLS_PER_SAMPLE_THRESHOLD = config["thresholds"]["min_cells_per_sample"] # Min number of cells per sample when using pseudobulked data
+NUM_COUNTS_PER_GENE_THRESHOLD = config["thresholds"]["min_counts_per_gene"] # Min number of counts per gene (post-pseudobulk-aggregation) for a gene to be considered expressed in the pseudobulk sample (independently computed per cell type).
+FRAC_SAMPLES_PER_GENE_THRESHOLD = config["thresholds"]["min_frac_samples_per_gene"] # Min percentage of samples expressing gene (post-pseudobulk-aggregation) for a gene to be included in comparisons.
 
 SAMPLE_GROUP_COLS = [ c["colname"] for c in config["sample_group_pairs"] ]
 SAMPLE_GROUP_LHSS = [ c["lhs"] for c in config["sample_group_pairs"] ]
@@ -301,7 +303,9 @@ rule pydeseq_within_celltype_case_vs_control:
         --sample-group-lhs "{params.sample_group_lhs_orig}" \
         --sample-group-rhs "{params.sample_group_rhs_orig}" \
         --num-samples-threshold {NUM_SAMPLES_THRESHOLD} \
-        --num-cells-per-sample-threshold {NUM_CELLS_PER_SAMPLE_THRESHOLD}
+        --num-cells-per-sample-threshold {NUM_CELLS_PER_SAMPLE_THRESHOLD} \
+        --num-counts-per-gene-threshold {NUM_COUNTS_PER_GENE_THRESHOLD} \
+        --frac-samples-per-gene-threshold {FRAC_SAMPLES_PER_GENE_THRESHOLD}
     """
 
 rule pydeseq_celltype_vs_rest:
@@ -329,7 +333,9 @@ rule pydeseq_celltype_vs_rest:
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name "{params.cell_type_name_orig}" \
         --num-samples-threshold {NUM_SAMPLES_THRESHOLD} \
-        --num-cells-per-sample-threshold {NUM_CELLS_PER_SAMPLE_THRESHOLD}
+        --num-cells-per-sample-threshold {NUM_CELLS_PER_SAMPLE_THRESHOLD} \
+        --num-counts-per-gene-threshold {NUM_COUNTS_PER_GENE_THRESHOLD} \
+        --frac-samples-per-gene-threshold {FRAC_SAMPLES_PER_GENE_THRESHOLD}
     """
 
 rule combine_splits:

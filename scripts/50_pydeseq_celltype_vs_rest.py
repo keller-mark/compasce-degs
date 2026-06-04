@@ -36,8 +36,10 @@ if __name__ == "__main__":
     parser.add_argument("--cell-type-col", type=str, required=True, help = "Name of cell type column")
     parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
     parser.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
-    parser.add_argument("--num-samples-threshold", type=int, required=True, help = "Min number of samples per group threshold")
-    parser.add_argument("--num-cells-per-sample-threshold", type=int, required=True, help = "Min number of cells per sample threshold")
+    parser.add_argument("--num-samples-threshold", type=int, required=True, default=3, help = "Min number of samples per group threshold")
+    parser.add_argument("--num-cells-per-sample-threshold", type=int, required=True, default=25, help = "Min number of cells per sample threshold")
+    parser.add_argument("--num-counts-per-gene-threshold", type=int, required=True, default=10, help = "Min number of counts per gene (post-pseudobulk-aggregation) threshold")
+    parser.add_argument("--frac-samples-per-gene-threshold", type=float, required=True, default=0.5, help = "Min percentage of samples expressing gene (post-pseudobulk-aggregation) threshold")
 
     args = parser.parse_args()
 
@@ -51,6 +53,10 @@ if __name__ == "__main__":
     cell_type_col = args.cell_type_col
     num_samples_threshold = args.num_samples_threshold
     num_cells_per_sample_threshold = args.num_cells_per_sample_threshold
+    num_counts_per_gene_threshold = args.num_counts_per_gene_threshold
+    frac_samples_per_gene_threshold = args.frac_samples_per_gene_threshold
+
+    assert frac_samples_per_gene_threshold >= 0.0 and frac_samples_per_gene_threshold <= 1.0, f"frac_samples_per_gene_threshold should be between 0 and 1, but got {frac_samples_per_gene_threshold}"
 
     # First filter based on number of cells per sample. We can use the "num_cells_orig" column that we set in agg_adata.py to do this filtering.
 
@@ -79,15 +85,16 @@ if __name__ == "__main__":
     # Subset the anndata object.
     pdata = pdata[pdata.obs["has_sufficient_num_cells"] & pdata.obs["has_sufficient_num_samples"]].copy()
 
-    # Filter along var: remove genes not expressed (count > 0) in at least 50% of pseudobulked samples.
+    # Filter along var: remove genes not expressed (count >= num_counts_per_gene_threshold) in at least (frac_samples_per_gene_threshold*100)% of pseudobulked samples.
     n_samples = pdata.X.shape[0]
-    num_expressed = np.asarray((pdata.X > 0).sum(axis=0)).flatten()
+    num_expressed = np.asarray((pdata.X >= num_counts_per_gene_threshold).sum(axis=0)).flatten()
     frac_expressed = num_expressed / n_samples
-    var_mask = frac_expressed >= 0.5
+    var_mask = frac_expressed >= frac_samples_per_gene_threshold
 
-    # TODO: also manually (via regex) remove "AC" and "AL"-prefixed genes?
+    # TODO: also manually (via regex) remove "AC" and "AL"-prefixed genes? "IG" genes for non-lymphoid?
 
     filtering_by_var_df = pdata.var.copy()
+    filtering_by_var_df["sum_counts_per_gene"] = num_expressed
     filtering_by_var_df["frac_expressed"] = frac_expressed
     filtering_by_var_df["is_expressed_in_sufficient_samples"] = var_mask
     filtering_by_var_df.to_csv(args.output_var_filtering_csv, index=True)

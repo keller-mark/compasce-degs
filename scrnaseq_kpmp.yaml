@@ -7,6 +7,10 @@ thresholds:
   min_cells_per_sample: 25
   # Min number of samples per sample group (e.g. AKI, CKD, Healthy Reference) for a given cell type to be included in comparisons.
   min_samples_per_group: 3
+  # Min number of counts per gene (post-pseudobulk-aggregation) for a gene to be considered expressed in the pseudobulk sample (independently computed per cell type).
+  min_counts_per_gene: 10
+  # Min percentage of samples expressing gene (post-pseudobulk-aggregation) for a gene to be included in comparisons.
+  min_frac_samples_per_gene: 0.5
 
 # Use generate_yml.ipynb to construct the YAML lists that follow.
 # Ensure that the normalize/unnormalize functions in the Snakefile handle special characters.
