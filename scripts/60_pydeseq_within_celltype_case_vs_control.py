@@ -31,7 +31,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-h5ad", type=str, required=True, help = "Path to input H5AD file.")
     parser.add_argument("--output-de-csv", type=str, required=True, help = "Path to output CSV file for DE results.")
-    parser.add_argument("--output-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering results, for debugging.")
+    parser.add_argument("--output-obs-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering obs results, for debugging.")
+    parser.add_argument("--output-var-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering var results, for debugging.")
     parser.add_argument("--cell-type-col", type=str, required=True, help = "Name of cell type column")
     parser.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
     parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
@@ -39,10 +40,12 @@ if __name__ == "__main__":
     parser.add_argument("--sample-group-col", type=str, required=True, help = "Name of sample group column")
     parser.add_argument("--sample-group-lhs", type=str, required=True, help = "Left-hand side of sample group design (e.g. 'Primary Adjudicated Category')")
     parser.add_argument("--sample-group-rhs", type=str, required=True, help = "Right-hand side of sample group design (e.g. 'AKI')")
-    
-    parser.add_argument("--num-samples-threshold", type=int, required=True, help = "Min number of samples per group threshold")
-    parser.add_argument("--num-cells-per-sample-threshold", type=int, required=True, help = "Min number of cells per sample threshold")
-    
+
+    parser.add_argument("--num-samples-threshold", type=int, required=True, default=3, help = "Min number of samples per group threshold")
+    parser.add_argument("--num-cells-per-sample-threshold", type=int, required=True, default=25, help = "Min number of cells per sample threshold")
+    parser.add_argument("--num-counts-per-gene-threshold", type=int, required=True, default=10, help = "Min number of counts per gene (post-pseudobulk-aggregation) threshold")
+    parser.add_argument("--frac-samples-per-gene-threshold", type=float, required=True, default=0.5, help = "Min percentage of samples expressing gene (post-pseudobulk-aggregation) threshold")
+
     args = parser.parse_args()
 
     pdata = read_h5ad(args.input_h5ad)
@@ -55,6 +58,10 @@ if __name__ == "__main__":
     cell_type_col = args.cell_type_col
     num_samples_threshold = args.num_samples_threshold
     num_cells_per_sample_threshold = args.num_cells_per_sample_threshold
+    num_counts_per_gene_threshold = args.num_counts_per_gene_threshold
+    frac_samples_per_gene_threshold = args.frac_samples_per_gene_threshold
+
+    assert frac_samples_per_gene_threshold >= 0.0 and frac_samples_per_gene_threshold <= 1.0, f"frac_samples_per_gene_threshold should be between 0 and 1, but got {frac_samples_per_gene_threshold}"
 
     sample_group_col = args.sample_group_col
     sample_group_lhs = args.sample_group_lhs
@@ -74,25 +81,44 @@ if __name__ == "__main__":
 
     # For each cell type, count the number of unique sample IDs that have sufficient number of cells,
     # and filter out cell types that don't have at least `num_samples_threshold` samples with sufficient number of cells.
-    
+
     num_samples_per_cell_type = (
         pdata.obs[pdata.obs["has_sufficient_num_cells"]]
             .groupby(cell_type_col)[sample_id_col]
             .nunique()
     )
 
-    pdata.obs["has_sufficient_num_samples"] = pdata.obs.apply(lambda row: num_samples_per_cell_type[row[cell_type_col]] >= num_samples_threshold, axis=1)
+    pdata.obs["has_sufficient_num_samples"] = pdata.obs[cell_type_col].apply(lambda cell_type_val: num_samples_per_cell_type[cell_type_val] >= num_samples_threshold)
+
+    pdata.obs["has_sufficient_num_samples"] = pdata.obs["has_sufficient_num_samples"].astype(bool)
+    pdata.obs["has_sufficient_num_cells"] = pdata.obs["has_sufficient_num_cells"].astype(bool)
 
     # Save this filtering info and write for debugging
     # TODO: subset filtering df to only the current cell type? otherwise, all the output files are redundant.
     filtering_by_num_cells_df = pdata.obs[["has_sufficient_num_cells", "has_sufficient_num_samples", cell_type_col, sample_id_col, sample_group_col, NUM_CELLS_COLNAME]].copy()
-    filtering_by_num_cells_df.to_csv(args.output_filtering_csv, index=True)
-    
+    filtering_by_num_cells_df.to_csv(args.output_obs_filtering_csv, index=True)
+
     # Subset the anndata object.
     pdata = pdata[pdata.obs["has_sufficient_num_cells"] & pdata.obs["has_sufficient_num_samples"]].copy()
 
+    # Filter along var: remove genes not expressed (count >= num_counts_per_gene_threshold) in at least (frac_samples_per_gene_threshold*100)% of pseudobulked samples.
+    n_samples = pdata.X.shape[0]
+    num_expressed = np.asarray((pdata.X >= num_counts_per_gene_threshold).sum(axis=0)).flatten()
+    frac_expressed = num_expressed / n_samples
+    var_mask = frac_expressed >= frac_samples_per_gene_threshold
+
+    # TODO: also manually (via regex) remove "AC" and "AL"-prefixed genes? "IG" genes for non-lymphoid?
+
+    filtering_by_var_df = pdata.var.copy()
+    filtering_by_var_df["sum_counts_per_gene"] = num_expressed
+    filtering_by_var_df["frac_expressed"] = frac_expressed
+    filtering_by_var_df["is_expressed_in_sufficient_samples"] = var_mask
+    filtering_by_var_df.to_csv(args.output_var_filtering_csv, index=True)
+
+    pdata = pdata[:, var_mask].copy()
+
     print(f"Filtered pdata shape: {pdata.shape}")
-    
+
     # LHS vs RHS
     has_lhs_and_rhs = pdata.obs[sample_group_col].nunique() == 2
     if not has_lhs_and_rhs:

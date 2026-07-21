@@ -12,7 +12,7 @@ if __name__ == "__main__":
     parser.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
     parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
     parser.add_argument("--sample-id", type=str, required=True, help = "Sample ID to subset for")
-    parser.add_argument("--agg-func", type=str, required=True, choices=["mean", "sum"], default="sum", help = "Aggregation function to use (default: mean)")
+    parser.add_argument("--agg-func", type=str, required=True, choices=["mean", "sum"], default="sum", help = "Aggregation function to use (default: sum)")
     
     args = parser.parse_args()
 

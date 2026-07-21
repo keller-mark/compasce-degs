@@ -171,6 +171,35 @@ For example, methods may have long execution times or high computational resourc
 ## Development
 
 ```sh
+tmux
+source ~/.bashrc_mark
+ssh-add ~/.ssh/my_id
+
+# If needed, delete or rename the old dataset
+
+cd research/compasce-degs
+source .venv/bin/activate
+unset CONDA_PREFIX
+export SLURM_ACCOUNT=$(sshare -u mk596 -U | cut -d ' ' -f 1 | tail -n 1)
+
+snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
+  --keep-incomplete --keep-going --latency-wait 30 --slurm \
+  --omit-from insert_celltype_vs_rest_degs insert_within_celltype_case_vs_control_degs \
+  --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
+
+# Run the insertion stuff one-by-one
+snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
+  --keep-incomplete --keep-going --latency-wait 30 --slurm \
+  --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
+
+
+```
+
+
+
+
+
+```sh
 uv venv
 source .venv/bin/activate
 uv sync --extra dev
@@ -312,20 +341,38 @@ pip install -e ".[dev]"
 conda activate compasce-env2
 export SLURM_ACCOUNT=$(sshare -u mk596 -U | cut -d ' ' -f 1 | tail -n 1)
 
-snakemake --snakefile scrnaseq_kpmp.smk -j 10 --rerun-triggers mtime \
+snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
-```
 
-Upload to S3:
-```sh
-srun -p interactive --pty -t 4:00:00 -n 1 --mem 16G bash
+# Or
+
+snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
+  --keep-incomplete --keep-going --latency-wait 30 --slurm \
+  --omit-from insert_celltype_vs_rest_degs insert_within_celltype_case_vs_control_degs \
+  --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
+
+# Run the insertion stuff one-by-one
+snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
+  --keep-incomplete --keep-going --latency-wait 30 --slurm \
+  --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
+
+
+# Finally: merge the metadata
+srun -p interactive --pty -t 4:00:00 -n 2 --mem 32G bash
 # source ~/.bashrc_mark
-# ssh-add
+# ssh-add ~/.ssh/
+# source .venv/bin/activate
+
+export ZARR_PATH=/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis/processed/kpmp-apr-2026.adata.zarr
+uv run scripts/99_merge_metadata.py --zarr-path $ZARR_PATH
+
+# Upload to S3:
 cd ~/lab/scmd-analysis/processed
 
-aws s3 cp kpmp-aug-2025.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-aug-2025.adata.zarr --recursive
+# Set AWS env vars
 
+aws s3 cp kpmp-apr-2026.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-may-2026.adata.zarr --recursive
 ```
 
 

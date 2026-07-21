@@ -43,6 +43,7 @@ dependencies = [
   'scikit-learn>=1.5.1',
   'gprofiler-official',
   #"mudata==0.3.1",
+  'filelock>=3.25.2'
 ]
 
 [project.optional-dependencies]
@@ -65,7 +66,7 @@ repository = "https://github.com/keller-mark/compasce-degs"
 
 
 [project.scripts]
-compasce = "compasce.pipeline_cli:run_cli"
+compasce2 = "compasce_degs.pipeline_cli:run_cli"
 
 
 # Reference: https://stackoverflow.com/a/74421415
