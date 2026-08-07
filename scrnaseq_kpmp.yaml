@@ -16,7 +16,6 @@ thresholds:
 # Ensure that the normalize/unnormalize functions in the Snakefile handle special characters.
 cell_types:
   subclass_l1:
-  - Ad
   - ATL
   - CNT
   - DCT
@@ -26,57 +25,64 @@ cell_types:
   - IC
   - Lymphoid
   - Myeloid
-  - NEU
-  - PapE
   - PC
   - PEC
+  - PL
   - POD
   - PT
+  - SC/NEU
   - TAL
-  - VSM/P
+  - VSMC/P
   subclass_l2:
+  - aATL
+  - aCCD-PC
   - aCNT
-  - Ad
+  - aCNT-PC
   - aDCT
   - aDTL
+  - aEC-DVR
   - aEC-GC
+  - aEC-PTC
+  - aIC-A
   - angEC-PTC
+  - aOMCD-PC
   - aPT
   - aTAL
   - ATL
-  - B
-  - C-IC-A
-  - C-PC
+  - B activated
+  - B memory
+  - B naive
   - C-TAL
   - C/M-TAL
+  - CCD-PC
+  - CD16+ NK
+  - CD16- NK
+  - CD8+ T-CYT
+  - CD8+ T-STR
+  - CD8+ TEM
+  - CD8+ TEMRA
+  - CD8+ TRM
+  - cDC1
+  - cDC2
+  - cMON
   - CNT
-  - cycEC
+  - CNT-PC
   - cycMAC
   - cycPT
   - cycT
-  - cycTAL
   - dATL
-  - DC
-  - dC-IC-A
-  - dC-TAL
-  - dCNT
+  - dCCD-PC
   - DCT
-  - dDCT
-  - dDTL
-  - dEC-AVR
+  - dDN
+  - dEC-EA
   - dEC-GC
   - dEC-PTC
-  - dFIB
-  - dIMCD
-  - dM-FIB
-  - dM-IC-A
-  - dM-PC
   - dM-TAL
   - dPOD
   - dPT
+  - dTAL
   - DTL1
   - DTL2
-  - DTL3
   - dVSMC
   - EC-AA
   - EC-AVR
@@ -87,170 +93,42 @@ cell_types:
   - EC-PCV
   - EC-PTC
   - EC-V
-  - ERY
-  - FIB
   - frPT
   - frTAL
-  - IC-B
-  - IMCD
-  - infEC-AVR
-  - infEC-PTC
-  - infFIB
-  - M-FIB
-  - M-IC-A
-  - M-PC
-  - M-TAL
-  - MAST
-  - MC
-  - MD
-  - moMAC
-  - moMAC-INF
-  - MON
-  - MYOF
-  - N
-  - NK
-  - PapE
-  - PEC
-  - PL
-  - POD
-  - PT-S1
-  - PT-S2
-  - PT-S3
-  - pvFIB
-  - REN
-  - resMAC
-  - SC/NEU
-  - T
-  - tPC-IC
-  - VSMC
-  - VSMC/P
-  subclass_l3:
-  - aCNT
-  - Ad
-  - aDCT
-  - aDTL2
-  - aEC-GC
-  - angEC-PTC
-  - aPT-S1/S2
-  - aPT-S3
-  - aPT1
-  - aPT2
-  - aTAL1
-  - aTAL2
-  - ATL
-  - B
-  - C-EC-PTC
-  - C-FIB
-  - C-FIB-OSMRhi
-  - C-FIB-OSMRlo
-  - C-FIB-PATH
-  - C-MYOF
-  - C-TAL-A
-  - C-TAL-B
-  - C/M-FIB
-  - C/M-TAL-A
-  - C/M-TAL-B
-  - CCD-IC-A
-  - CCD-PC
-  - CD8+ TEM/TEMRA
-  - CD8+ TEM/TRM
-  - cDC1
-  - cDC2
-  - CNT
-  - CNT-PC
-  - cycEC
-  - cycMAC
-  - cycPT
-  - cycT
-  - cycTAL
-  - dATL
-  - dC-TAL
-  - dCCD-IC-A
-  - dCNT
-  - dCNT-PC
-  - DCT1
-  - DCT2
-  - dDCT
-  - dDTL
-  - dEC-AVR
-  - dEC-GC
-  - dEC-PTC
-  - dFIB
-  - dIM-FIB
-  - dIMCD
-  - dM-TAL
-  - dOM-FIB
-  - dOMCD-IC-A
-  - dOMCD-PC
-  - dPOD
-  - dPT
-  - dPT-S1
-  - dPT-S2
-  - dPT-S3
-  - DTL1
-  - DTL2
-  - DTL3
-  - dVSMC
-  - EC-AA
-  - EC-AVR
-  - EC-DVR
-  - EC-EA
-  - EC-GC
-  - EC-GC-FILIP1+
-  - EC-LYM
-  - EC-PCV
-  - EC-V
-  - ERY
-  - frDCT
-  - frPT-S1/S2
-  - frPT-S3
-  - frTAL
-  - iaEC-AVR
-  - iaEC-PTC
+  - IC-A
   - IC-B
   - ILC3
-  - IM-FIB
-  - IM-pvMYOF
-  - IMCD
-  - infEC-PTC
-  - M-EC-PTC
   - M-TAL
-  - M-VSMC/P
   - MAIT
   - MAST
   - MC
   - MD
   - mDC
   - moFAM
-  - moMAC-C3+
-  - moMAC-CXCL10+
-  - moMAC-HBEGF+
-  - MON
-  - N
-  - "Na\xEFve Th"
+  - moMAC-C3_pos
+  - moMAC-CXCL10_pos
+  - moMAC-HBEGF_pos
+  - moMAC-LUCAT1_pos
+  - MYOF
+  - Naive T
   - ncMON
-  - NK
-  - OM-FIB
-  - OMCD-IC-A
   - OMCD-PC
-  - PapE
   - pDC
   - PEC
   - PL
   - POD
-  - PT-S1
-  - PT-S2
-  - PT-S3
+  - PT-S1/S2
+  - PT-S2/S3
   - pvFIB
-  - pvFIB-PI16+
-  - pvFIB-RSPO3+
-  - pvMYOF
   - REN
-  - resMAC-HLAIIhi
-  - resMAC-LYVE1+
+  - resMAC-HLAII_hi
+  - resMAC-LYVE1_pos
   - SC/NEU
+  - T-CXCR4+
   - T-REG
-  - tOMCD-PC-IC
+  - Th-memory
+  - Th17
+  - tPC-IC
   - VSMC
   - VSMC/P
 sample_group_pairs:
@@ -287,321 +165,47 @@ sample_group_pairs:
 - colname: MergedAdjudicatedCategory
   lhs: AKI
   rhs: Hypertensive Kidney Disease
+
+# TODO: investigate the lack of overlap between clinical "Participant ID" column and adata.obs["SpecimenID"] column.
 patient_ids:
-- '3535'
-- KRP446
-- '3490'
-- '3499'
-- '3504'
-- '3593'
-- '3613'
-- KRP460
-- KRP461
-- KRP462
-- 18-162
-- 18-142
-- 18-312
-- 31-10001
-- 29-10006
-- 30-10034
-- 31-10006
-- 32-10003
-- 29-10008
-- 29-10012
-- 31-10013
-- 32-2
-- 31-10000
-- 33-10005
-- 32-10034
-- 33-10006
-- 29-10013
-- 29-10010
-- 31-10035
-- 30-10018
-- 29-10276
-- 27-10043
-- 34-10209
-- 30-10044
-- 29-10011
-- 34-10050
-- 29-10016
-- 32-10205
-- 29-10277
-- 34-10184
-- 28-10109
-- 28-10051
-- 34-10187
-- 31-10061
-- 31-10063
-- 164-1
-- 27-10088
-- 30-10929
-- 27-10094
-- 27-10039
-- 30-10631
-- 29-10280
-- 27-10074
-- 28-12178
-- 31-10081
-- 31-10210
-- 29-10380
-- 31-10105
-- 29-10400
-- 27-10041
-- 164-5
-- 164-6
-- 164-7
-- 29-10401
-- 164-3
-- 28-12510
-- 27-10089
-- 29-10406
-- 32-10333
-- 31-10091
-- 31-10177
-- 27-10104
-- 164-8
-- 29-10393
-- 163-5
-- 165-7
-- 165-10
-- 164-10
-- 163-6
-- 165-9
-- 164-15
-- 31-10090
-- 33-10331
-- 165-14
-- 165-15
-- 32-10419
-- 28-12372
-- 28-12412
-- 27-10163
-- 27-10165
-- 34-10240
-- 27-10166
-- 30-11084
-- 164-14
-- 27-10066
-- 28-12558
-- 30-10125
-- 165-11
-- 164-11
-- 27-10171
-- 32-10346
-- 33-10376
-- 34-10331
-- 28-12546
-- 31-10340
-- 31-10322
-- 164-18
-- 31-10236
-- 30-10868
-- 164-20
-- 29-10399
-- 31-10169
-- 29-10395
-- 34-10306
-- 29-10404
-- 164-17
-- 28-12265
-- 31-10100
-- 27-10185
-- 164-12
-- 30-11051
-- 32-10074
-- 28-11515
-- 31-10078
-- 27-10067
-- 30-11081
-- 29-10410
-- 32-10456
-- 934-10022
-- 27-10154
-- 27-10207
-- 165-13
-- 27-10201
-- 934-10016
-- 32-10458
-- 933-10003
-- 936-10002
-- 936-10006
-- 29-10662
-- 27-10231
-- 29-10422
-- 164-13
-- 934-10032
-- 936-10003
-- 34-10393
-- 30-11080
-- 28-12579
-- 29-10402
-- 34-10579
-- 29-10439
-- 27-10206
-- 934-10023
-- 933-10010
-- 31-10221
+- PRE027
+- PRE038
+- PRE98sc
+- PRE018-1
+- PRE019-4
+- PRE055-1
+- PRE062-1
+- PRE19-05
+- PRE19-025
+- Sample1153-EO1
+- Sample1153-EO2
+- Sample1153-EO3
+- Sample1157-EO1
+- Sample1157-EO2
+- Sample1157-EO3
+- Sample1158-EO1
+- Sample1158-EO2
+- Sample1158-EO3
+- Sample1162-EO1
+- Sample1162-EO2
+
+# TODO: Investigate the above patient_ids, which will hopefully result in more specimen_ids here (from adata.obs["SampleID"] in the original AnnData object).
 specimen_ids:
-- K1900174_2
-- 446_B1
-- 446_B3
-- K1800364_1
-- K1900175_1_R1
-- K1800430_3_R3
-- K1900019_1_R3
-- K1900387_1_R1
-- K1900387_4_R1
-- K2000094_2_R1
-- KRP460C-1
-- KRP460P-1
-- KRP461C-1
-- KRP462C-1
-- KRP462P-1
-- 18-162-2-M2
-- 18-142-3-M2
-- 18-312-2-M2
-- S-1908-000952-R1
-- S-1905-017562-R1
-- S-1908-009653_R1
-- S-1908-000858_R1
-- S-1908-010077_R1
-- S-1910-000055_R1
-- S-1909-007161_R1
-- S-1910-000149_R1
-- S-1908-010172_R1
-- S-1908-000905_R1
-- S-1908-009843_R1
-- S-1908-010125_R1
-- S-1908-009890_R1
-- S-2001-000055_R1
-- S-2001-000102_R1
-- S-1910-000196_R1
-- S-1908-009747_R2
-- S-2006-002304_R2
-- S-2006-002057_R1
-- S-2006-004494_R1
-- S-1908-009700_R1
-- S-1910-000102_R1
-- S-1904-008141_R1
-- S-2001-000149_R1
-- S-2006-001861_R1
-- S-2006-002257_R1
-- S-1904-007305_R2
-- S-1905-018744_R2
-- S-1905-018697_R2
-- S-1903-005478_R2
-- S-2006-004682_R2
-- S-2006-004776_R2
-- S-2008-006029
-- S-2002-005671
-- S-2002-007802
-- S-2010-013102
-- S-1908-000764
-- S-2006-001673
-- S-1909-007208
-- S-2006-002151
-- S-2006-004965_R1
-- S-2006-004871_R1
-- S-2103-004776_R1
-- S-2002-007473_R1
-- S-2006-005012_R1
-- S-2002-007567_R1
-- S-2002-005624_R1
-- S-2008-006735_R1
-- S-2107-011583_R1
-- S-2108-005549_R1
-- S-2010-004290_R1
-- S-2008-006723_R1
-- S-2102-006470_R1
-- S-2010-013008_R1
-- S-2104-018997_R1
-- S-2006-002002_R1
-- S-2006-004824_R1
-- S-2010-012867_R1
-- S-2106-003754_R1
-- S-2108-005561_R1
-- S-2010-004334_R1
-- S-2106-003887_R1
-- S-2008-007629_R1
-- S-2108-005529_R1
-- S-2108-005585_R1
-- S-2106-003910_R1
-- S-2108-005520_R1
-- S-2006-001673_D2_N1
-- S-2112-014318_D1_N1
-- S-2106-003801_D1_N1
-- S-2108-005585_D2_N1
-- S-2103-004776_D2_N1
-- S-2006-002499_D1_N1
-- S-2108-005591_D1_N1
-- S-2108-005504_D1_N1
-- S-2006-003850_D1_N1
-- S-2108-021709_D1_N1
-- S-2108-021756_D1_N1
-- S-2203-008750_D1_N1
-- S-2203-008952_D1_N1
-- S-2102-003417_D1_N1
-- S-2203-016145_D1_N1
-- S-2006-001767_D1_N1
-- S-2111-008312_D1_N1
-- S-2006-005059_D1_N1
-- S-2203-000775_D1_N1
-- S-2002-007755_D1_N1
-- S-2008-007625_D1_N1
-- S-2111-08276_D1_N1
-- S-2106-003662_D1_N1
-- S-2109-011418_D1_N1
-- S-2006-002403_D1_N1
-- S-2102-003464_D1_N1
-- S-2203-000634_D1_N1
-- S-2108-000608_D1_N1
-- S-2103-004823_D1_N1
-- S-2203-024251_D1_N1
-- S-2103-004870_D1_N1
-- S-2006-001720_D1_N1
-- S-2205-002514_D1_N1
-- S-2102-006611_D1_N1
-- S-2101-000807_D1_N1
-- S-2101-000901_D1_N1
-- S-2102-006282_D1_N1
-- S-2102-006239_D1_N1
-- S-2203-024239_D1_N1
-- S-2102-006564_D1_N1
-- S-2008-000366_D1_N1
-- S-2203-008562_D1_N1
-- S-2111-008288_D1_N1
-- S-2002-014482_D1_N1
-- S-1908-010031_D1_N1
-- S-2002-007614_D1_N1
-- S-2001-005369_D1_N1
-- S-2010-004196_D1_N1
-- S-2101-003343_D1_N1
-- S-2107-014954_D1_N1
-- S-2006-001908_D1_N1
-- S-2301-008489_D1_N1
-- S-2203-008891_D1_N1
-- S-2305-006563_D1_N1
-- S-2108-005328_D1_N1
-- S-2305-006610_D1_N1
-- S-2303-008796_D1_N1
-- S-2006-003897_D1_N1
-- S-2302-002448_D1_N1
-- S-2303-014342_D1_N1
-- S-2303-014107_D1_N1
-- S-2306-001149_D1_N1
-- S-2306-012843_D1_N1
-- S-2107-015189_D1_N1
-- S-2111-008300_D1_N1
-- S-2307-011845_D1_N1
-- S-2303-014295_D1_N1
-- S-2102-003511_D1_N1
-- S-2002-014529_D1_N1
-- S-2203-000728_D1_N1
-- S-2104-018950_D1_N1
-- S-2109-019210_D1_N1
-- S-2206-007963_D1_N1
-- S-2305-006657_D1_N1
-- S-2307-011657_D1_N1
-- S-2302-002695_D1_N1
-- S-2103-04729_D1_N1
+- '27'
+- '38'
+- '98'
+- '18'
+- '19'
+- '55'
+- '62'
+- '73'
+- '78'
+- '82'
+- '65'
+- '69'
+- '90'
+- '124'
+- '133'
+- '138'
+- '86'
+- '108'
