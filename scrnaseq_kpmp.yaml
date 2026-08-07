@@ -166,7 +166,7 @@ sample_group_pairs:
   lhs: AKI
   rhs: Hypertensive Kidney Disease
 
-# TODO: investigate the lack of overlap between clinical "Participant ID" column and adata.obs["SpecimenID"] column.
+# TODO: investigate the lack of overlap between clinical "Participant ID" column and adata.obs["KPMPID"] column.
 patient_ids:
 - 34-10050
 - 29-10006
