@@ -141,6 +141,15 @@ sample_group_pairs:
 - colname: EnrollmentCategory
   lhs: CKD
   rhs: Healthy Reference
+- colname: EnrollmentCategory
+  lhs: DM-R
+  rhs: AKI
+- colname: EnrollmentCategory
+  lhs: DM-R
+  rhs: Healthy Reference
+- colname: EnrollmentCategory
+  lhs: DM-R
+  rhs: CKD
 - colname: AdjudicatedCategory
   lhs: Diabetic Kidney Disease
   rhs: Healthy Reference
@@ -166,8 +175,15 @@ sample_group_pairs:
   lhs: AKI
   rhs: Hypertensive Kidney Disease
 
-# TODO: investigate the lack of overlap between clinical "Participant ID" column and adata.obs["KPMPID"] column.
 patient_ids:
+- PRE027
+- PRE038
+- PRE98sc
+- PRE018-1
+- PRE19
+- PRE055-1
+- PRE062-1
+- REF67
 - 34-10050
 - 29-10006
 - 28-10051
@@ -228,6 +244,21 @@ patient_ids:
 - 29-10425
 - 164-22
 - 934-10001
+- Sample1153-EO1
+- Sample1153-EO2
+- Sample1153-EO3
+- Sample1157-EO1
+- Sample1157-EO2
+- Sample1157-EO3
+- Sample1158-EO1
+- Sample1158-EO2
+- Sample1158-EO3
+- Sample1162-EO1
+- Sample1162-EO2
+- 21-015
+- 21-016
+- 21-019
+- 21-020
 - 34-10187
 - 34-10184
 - 28-12263
@@ -257,6 +288,23 @@ patient_ids:
 - 29-10410
 - 28-12518
 specimen_ids:
+- PRE027
+- PRE038
+- PRE98sc
+- PRE018-1
+- PRE019-4
+- PRE055-1
+- PRE062-1
+- PRE19-05
+- PRE19-025
+- REF67-6034-EO1
+- REF67-7249-EO5
+- REF67-7274-EO5
+- Run6415EO1-REF67
+- Run6426EO1-REF67
+- Run6432EO1-REF67
+- Run7734EO4-REF67
+- Run8105EO4-REF67
 - S-1904-008134
 - S-1905-017555-A
 - S-1905-017555-B
@@ -319,6 +367,25 @@ specimen_ids:
 - S-2207-011356
 - S-2210-016826-HRT
 - S-2301-008294
+- Sample1153-EO1
+- Sample1153-EO2
+- Sample1153-EO3
+- Sample1157-EO1
+- Sample1157-EO2
+- Sample1157-EO3
+- Sample1158-EO1
+- Sample1158-EO2
+- Sample1158-EO3
+- Sample1162-EO1
+- Sample1162-EO2
+- Pilot1V2-21-015
+- Pilot1V2-21-015B
+- Pilot1V2-21-016
+- Pilot1V2-21-016B
+- Pilot1V2-21-019
+- Pilot1V2-21-019B
+- Pilot1V2-21-020
+- Pilot1V2-21-020B
 - S-1903-005471
 - S-1904-007298
 - S-1905-018643

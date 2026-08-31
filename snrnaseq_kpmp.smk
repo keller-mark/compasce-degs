@@ -3,6 +3,9 @@ configfile: "./scrnaseq_kpmp.yaml"
 
 DEBUG_MODE = False
 
+INTERMEDIATE_DIR = join(COMMON_INTERMEDIATE_DIR, "sn")
+PROCESSED_DIR = join(COMMON_PROCESSED_DIR, "sn")
+
 RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad")
 RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv")
 
@@ -413,6 +416,7 @@ rule clean_h5ad:
   input:
     h5ad=join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad"),
     clinical=join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv"),
+    # TODO: is this still needed/used?
     deg_dir=join(RAW_DIR, "kpmp-aug-2025")
   output:
     protected(CLEANED_H5AD_PATH),
