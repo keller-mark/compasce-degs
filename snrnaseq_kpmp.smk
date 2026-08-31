@@ -1,5 +1,5 @@
 include: "./common.smk"
-configfile: "./scrnaseq_kpmp.yaml"
+configfile: "./snrnaseq_kpmp.yaml"
 
 DEBUG_MODE = False
 
