@@ -111,7 +111,8 @@ if __name__ == "__main__":
         # Column names cannot contain slashes
         adata.obs = adata.obs.rename(columns=dict(zip(adata.obs.columns, [c.replace("/", " per ") for c in adata.obs.columns])))
 
-
+        # The single-cell object does not contain any layers; only X
+        adata.layers["counts"] = adata.X
 
 
 
