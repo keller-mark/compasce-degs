@@ -104,7 +104,7 @@ if __name__ == "__main__":
         for colname in adata.obs.columns:
             if pd.api.types.is_string_dtype(adata.obs[colname]) or str(adata.obs[colname].dtype) == "object":
                 print(f"Filling NAs in string column {colname} with 'NA'")
-                adata.obs[colname] = adata.obs[colname].fillna("NA")
+                adata.obs[colname] = adata.obs[colname].astype(str).fillna("NA")
             else:
                 print(f"Not filling NAs in non-string column {colname} of type {adata.obs[colname].dtype}")
 
