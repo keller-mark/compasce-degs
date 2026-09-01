@@ -1,4 +1,4 @@
-# Single-nucleus
+# Single-cell
 from compasce_degs import run_all, create_dask_client, create_o2_dask_client
 from anndata import read_h5ad
 import numpy as np
@@ -9,9 +9,8 @@ import h5py
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input-h5ad", type=str, required=True, help = "Path to KPMP H5AD file from Globus, august 2025.")
+    parser.add_argument("--input-h5ad", type=str, required=True, help = "Path to KPMP H5AD file from the Atlas, august 2026.")
     parser.add_argument("--input-csv", type=str, required=True, help = "Path to KPMP clinical data CSV file.")
-    parser.add_argument("--input-deg-dir", type=str, required=True, help = "Path to folder containing precomputed DEG .txt files.")
     parser.add_argument("--output", type=str, required=True, help = "Path to output H5AD file")
     parser.add_argument("--output-zarr", type=str, required=True, help = "Path to output Zarr directory")
     parser.add_argument("--subset", action=argparse.BooleanOptionalAction, default=False)
@@ -39,7 +38,7 @@ if __name__ == "__main__":
         # Join adata.obs with clinical data from CSV
         clinical_data = pd.read_csv(args.input_csv)
 
-        adata.obs = adata.obs.merge(clinical_data, left_on="patient", right_on="Participant ID", how="left")
+        adata.obs = adata.obs.merge(clinical_data, left_on="KPMP Participant ID", right_on="Participant ID", how="left")
 
         # We could have done a left join, but then we would have to filter out samples that do not have clinical data later.
         # We also do not want strings to be converted to NaN, as these cause Zarr writing errors like "TypeError: expected unicode string, found nan".
@@ -95,19 +94,25 @@ if __name__ == "__main__":
 
         # TODO: process other clinical columns? Sex, age group, etc.
 
-        adata.obs = adata.obs.rename(columns={"subclass.l1": "subclass_l1", "subclass.l2": "subclass_l2", "subclass.l3": "subclass_l3"})
+        adata.obs = adata.obs.rename(columns={
+            "subclass.l1": "subclass_l1",
+            "subclass.l2": "subclass_l2",
+            "SpecimenID": "specimen",
+            "KPMP Participant ID": "patient",
+        })
 
         for colname in adata.obs.columns:
             if pd.api.types.is_string_dtype(adata.obs[colname]) or str(adata.obs[colname].dtype) == "object":
                 print(f"Filling NAs in string column {colname} with 'NA'")
-                adata.obs[colname] = adata.obs[colname].fillna("NA")
+                adata.obs[colname] = adata.obs[colname].astype(str).fillna("NA")
             else:
                 print(f"Not filling NAs in non-string column {colname} of type {adata.obs[colname].dtype}")
 
         # Column names cannot contain slashes
         adata.obs = adata.obs.rename(columns=dict(zip(adata.obs.columns, [c.replace("/", " per ") for c in adata.obs.columns])))
 
-
+        # The single-cell object does not contain any layers; only X
+        adata.layers["counts"] = adata.X
 
 
 
@@ -143,6 +148,10 @@ if __name__ == "__main__":
         ('EnrollmentCategory', ('AKI', 'CKD')),
         # D-CKD vs. HRT. (D-CKD not in enrollment category values anymore. Should I use "Diabetes History" Yes/No column?)
         ('EnrollmentCategory', ('CKD', 'Healthy Reference')),
+        # DM-R comparisons
+        ('EnrollmentCategory', ('Healthy Reference', 'DM-R')),
+        ('EnrollmentCategory', ('CKD', 'DM-R')),
+        ('EnrollmentCategory', ('AKI', 'DM-R')),
         # Diabetes CKD vs. Hypertension CKD. (DKD nor H-CKD not in enrollment category values anymore. Should I use Yes/No columns?)
         #('EnrollmentCategory', ('DKD', 'H-CKD')),
         # D-CKD vs. HRT
@@ -167,7 +176,6 @@ if __name__ == "__main__":
         # I.e., exclude tumor nephrectomies from healthy. Exclude non-KPMP biopsies.
     ]
     cell_type_cols = [
-        "subclass_l3",
         "subclass_l2",
         "subclass_l1",
     ]
@@ -183,7 +191,6 @@ if __name__ == "__main__":
         sample_group_pairs=sample_group_pairs,
         cell_type_cols=cell_type_cols,
         stop_early=args.stop_early,
-        input_deg_dir=args.input_deg_dir,
     )
 
     print("Done")

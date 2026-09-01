@@ -1,23 +1,22 @@
 include: "./common.smk"
-configfile: "./scrnaseq_kpmp.yaml"
+configfile: "./snrnaseq_kpmp.yaml"
 
 DEBUG_MODE = False
 
-INTERMEDIATE_DIR = join(COMMON_INTERMEDIATE_DIR, "sc")
-PROCESSED_DIR = join(COMMON_PROCESSED_DIR, "sc")
+INTERMEDIATE_DIR = join(COMMON_INTERMEDIATE_DIR, "sn")
+PROCESSED_DIR = join(COMMON_PROCESSED_DIR, "sn")
 
-RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2026", "KPMP_PREMIERE_SC_version2_ForExplorer_RemovedBatchEffect_Final2025.clean.h5ad")
-RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2026", "20260618_OpenAccessClinicalData.csv")
-
+RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad")
+RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv")
 
 # Intermediate output paths
 CLEANED_H5AD_PATH = join(INTERMEDIATE_DIR, "cleaned.h5ad")
-ZARR_PATH = join(PROCESSED_DIR, "kpmp-aug-2026.adata.zarr")
+ZARR_PATH = join(PROCESSED_DIR, "kpmp-apr-2026.adata.zarr")
 NORMALIZED_H5AD_PATH = join(INTERMEDIATE_DIR, "normalized.h5ad")
 
 L1_CELL_TYPES = sorted(config["cell_types"]["subclass_l1"])
 L2_CELL_TYPES = sorted(config["cell_types"]["subclass_l2"])
-#L3_CELL_TYPES = sorted(config["cell_types"]["subclass_l3"])
+L3_CELL_TYPES = sorted(config["cell_types"]["subclass_l3"])
 
 def cell_type_name_to_index(cell_type_name, cell_type_col):
   # Convert cell type name to index in config["cell_types"]["subclass_l1"], which
@@ -70,7 +69,7 @@ UNIQUE_SAMPLE_GROUP_COLS = sorted(set(SAMPLE_GROUP_COLS))
 if DEBUG_MODE:
     L1_CELL_TYPES = L1_CELL_TYPES[:5]
     L2_CELL_TYPES = L2_CELL_TYPES[:5]
-    #L3_CELL_TYPES = L3_CELL_TYPES[:5]
+    L3_CELL_TYPES = L3_CELL_TYPES[:5]
     SPECIMEN_IDS = SPECIMEN_IDS[:5]
 
 
@@ -398,7 +397,7 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
   resources:
     slurm_partition="short",
     runtime=30, # half hour
-    mem_mb=32_000, # 16 GB
+    mem_mb=16_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -415,9 +414,10 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
 
 rule clean_h5ad:
   input:
-    # The output of generate_sc_yml.ipynb
-    h5ad=join(RAW_DIR, "kpmp-aug-2026", "KPMP_PREMIERE_SC_version2_ForExplorer_RemovedBatchEffect_Final2025.clean.h5ad"),
-    clinical=join(RAW_DIR, "kpmp-aug-2026", "20260618_OpenAccessClinicalData.csv")
+    h5ad=join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad"),
+    clinical=join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv"),
+    # TODO: is this still needed/used?
+    deg_dir=join(RAW_DIR, "kpmp-aug-2025")
   output:
     protected(CLEANED_H5AD_PATH),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata")
@@ -430,9 +430,10 @@ rule clean_h5ad:
     cpus_per_task=2
   shell:
     """
-    python scripts/00_run_comparisons_kpmp_sc_2026.py \
+    python scripts/00_run_comparisons_kpmp_2025.py \
         --input-h5ad {input.h5ad} \
         --input-csv {input.clinical} \
+        --input-deg-dir {input.deg_dir} \
         --output {CLEANED_H5AD_PATH} \
         --output-zarr {ZARR_PATH} \
         --stop-early {params.subset_line}
