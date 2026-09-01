@@ -398,7 +398,7 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
   resources:
     slurm_partition="short",
     runtime=30, # half hour
-    mem_mb=16_000, # 16 GB
+    mem_mb=32_000, # 16 GB
     cpus_per_task=2
   shell:
     """
