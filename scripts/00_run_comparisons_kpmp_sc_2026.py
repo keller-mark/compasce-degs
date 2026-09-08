@@ -112,7 +112,8 @@ if __name__ == "__main__":
         adata.obs = adata.obs.rename(columns=dict(zip(adata.obs.columns, [c.replace("/", " per ") for c in adata.obs.columns])))
 
         # The single-cell object does not contain any layers; only X
-        adata.layers["counts"] = adata.X
+        # Further, the counts are in adata.raw.X (as a sparse matrix), not adata.X. PyDESeq2 needs counts, not pre-normalized values.
+        adata.layers["counts"] = adata.raw.X.astype(np.dtype('i4'))
 
 
 
