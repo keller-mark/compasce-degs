@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     adata = read_h5ad(args.input_h5ad)
 
-    adata.X = adata.layers["counts"] if adata.X is None else adata.X
+    adata.X = adata.layers["counts"]
 
     num_cells_orig = adata.shape[0]
 
