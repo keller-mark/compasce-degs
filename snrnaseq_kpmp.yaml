@@ -263,6 +263,15 @@ sample_group_pairs:
 - colname: EnrollmentCategory
   lhs: CKD
   rhs: Healthy Reference
+- colname: EnrollmentCategory
+  lhs: DM-R
+  rhs: AKI
+- colname: EnrollmentCategory
+  lhs: DM-R
+  rhs: Healthy Reference
+- colname: EnrollmentCategory
+  lhs: DM-R
+  rhs: CKD
 - colname: AdjudicatedCategory
   lhs: Diabetic Kidney Disease
   rhs: Healthy Reference

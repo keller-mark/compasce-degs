@@ -65,6 +65,16 @@ SAMPLE_GROUP_RHSS = [ c["rhs"] for c in config["sample_group_pairs"] ]
 
 UNIQUE_SAMPLE_GROUP_COLS = sorted(set(SAMPLE_GROUP_COLS))
 
+# This list is used when performing cell-type-vs-all-others for not only all samples, but also within subgroups.
+# We use set here to ensure that we don't have duplicate entries for the same sample group and category.
+# Note that zip produces tuples, which are hashable and can be added to a set.
+# We add a special __all__ entry to ensure that we also perform cell-type-vs-all-others for all samples.
+UNIQUE_SAMPLE_GROUP_AND_CATEGORY = [("__all__", "__all__")] + list(set(
+  list(zip(SAMPLE_GROUP_COLS, SAMPLE_GROUP_LHSS))
+  + list(zip(SAMPLE_GROUP_COLS, SAMPLE_GROUP_RHSS))
+))
+
+
 
 if DEBUG_MODE:
     L1_CELL_TYPES = L1_CELL_TYPES[:5]
@@ -89,7 +99,10 @@ rule all:
     expand(
       #join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
       
-      join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}"),
+      [
+        join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}." + sample_group + "." + normalize_identifier(group_category) + ".{agg_func}")
+        for (sample_group, group_category) in UNIQUE_SAMPLE_GROUP_AND_CATEGORY
+      ],
       cell_type_col=["subclass_l1"],
       cell_type_name_norm=[normalize_identifier(ct) for ct in L1_CELL_TYPES],
       sample_id_col=[SPECIMEN_ID_COL],
@@ -176,11 +189,12 @@ rule insert_within_celltype_case_vs_control_degs:
 rule insert_celltype_vs_rest_degs:
   input:
     ladata=join_zdone(ZARR_PATH, "uns", "comparison_metadata"),
-    deg_results=join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
+    deg_results=join(INTERMEDIATE_DIR,               "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv")
   output:
-    join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}")
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}")
   params:
-    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
+    sample_group_name_orig=lambda w: unnormalize_identifier(w.sample_group_name_norm)
   resources:
     slurm_partition="short",
     runtime=60, # half hour
@@ -195,6 +209,8 @@ rule insert_celltype_vs_rest_degs:
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name "{params.cell_type_name_orig}" \
         --sample-id-col {wildcards.sample_id_col} \
+        --sample-group-col {wildcards.sample_group_col} \
+        --sample-group-name "{params.sample_group_name_orig}" \
         --agg-func {wildcards.agg_func} \
         --out-path {output}
     """
@@ -315,11 +331,12 @@ rule pydeseq_celltype_vs_rest:
   input:
     join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
   output:
-    de_df=join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
-    obs_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_obs_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
-    var_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_var_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
+    de_df=join(INTERMEDIATE_DIR,                          "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv"),
+    obs_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_obs_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv"),
+    var_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_var_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv")
   params:
-    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
+    sample_group_name_orig=lambda w: unnormalize_identifier(w.sample_group_name_norm)
   resources:
     slurm_partition="short",
     runtime=60, # 1 hour
@@ -333,6 +350,8 @@ rule pydeseq_celltype_vs_rest:
         --output-obs-filtering-csv {output.obs_filtering_df} \
         --output-var-filtering-csv {output.var_filtering_df} \
         --sample-id-col {wildcards.sample_id_col} \
+        --sample-group-col "{wildcards.sample_group_col}" \
+        --sample-group-name "{params.sample_group_name_orig}" \
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name "{params.cell_type_name_orig}" \
         --num-samples-threshold {NUM_SAMPLES_THRESHOLD} \

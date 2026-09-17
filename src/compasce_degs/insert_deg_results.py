@@ -7,7 +7,9 @@ from anndata import AnnData
 
 def insert_celltype_vs_rest_degs(
     ladata, cm,
-    csv_path, cell_type_col, sample_id_col, cell_type_name, agg_func,
+    csv_path, cell_type_col, sample_id_col,
+    sample_group_col, sample_group_name,
+    cell_type_name, agg_func,
     out_key,
 ):
     print(f"Inserting pseudobulk for cell types vs rest, using PyDESeq2")
@@ -19,6 +21,8 @@ def insert_celltype_vs_rest_degs(
     # Check whether df is empty (insufficient data for DEG analysis).
     df = pd.read_csv(csv_path)
     is_empty = df.shape[0] == 0
+
+    is_filtered_by_sample_group = sample_group_col != "__all__" and sample_group_name != "__all__"
 
     cmp = cm.add_comparison([("compare", cell_type_col), ("val", cell_type_name), "__rest__"])
 
@@ -33,6 +37,10 @@ def insert_celltype_vs_rest_degs(
         "obsType": "cell",
         "featureType": "gene",
         "obsSetSelection": [[cell_type_col, cell_type_name]],
+        **({
+            "sampleSetFilter": [[sample_group_col, sample_group_name]],
+            "sampleSetSelection": [[sample_group_col, sample_group_name]],
+        } if is_filtered_by_sample_group else {})
     })
 
     if not is_empty:

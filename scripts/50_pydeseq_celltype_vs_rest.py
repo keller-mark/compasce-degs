@@ -35,6 +35,8 @@ if __name__ == "__main__":
     parser.add_argument("--output-var-filtering-csv", type=str, required=True, help = "Path to output CSV file for filtering var results, for debugging.")
     parser.add_argument("--cell-type-col", type=str, required=True, help = "Name of cell type column")
     parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
+    parser.add_argument("--sample-group-col", type=str, required=True, help = "Name of sample group column, or __all__ if not applicable.")
+    parser.add_argument("--sample-group-name", type=str, required=True, help = "Name of sample group to use for filtering, or __all__ if not applicable.")
     parser.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
     parser.add_argument("--num-samples-threshold", type=int, required=True, default=3, help = "Min number of samples per group threshold")
     parser.add_argument("--num-cells-per-sample-threshold", type=int, required=True, default=25, help = "Min number of cells per sample threshold")
@@ -49,6 +51,8 @@ if __name__ == "__main__":
 
     # Filter pdata
     sample_id_col = args.sample_id_col
+    sample_group_col = args.sample_group_col
+    sample_group_name = args.sample_group_name
     cell_type = args.cell_type_name
     cell_type_col = args.cell_type_col
     num_samples_threshold = args.num_samples_threshold
@@ -62,6 +66,11 @@ if __name__ == "__main__":
 
     # These (cell type, sample ID) rows have at least `num_cells_per_sample_threshold` cells, so we keep them.
     pdata.obs["has_sufficient_num_cells"] = pdata.obs[NUM_CELLS_COLNAME] >= num_cells_per_sample_threshold
+
+    # Next, filter to the specified sample group, if applicable.
+    if sample_group_col != "__all__" and sample_group_name != "__all__":
+        pdata.obs["is_in_sample_group"] = pdata.obs[sample_group_col] == sample_group_name
+        pdata = pdata[pdata.obs["is_in_sample_group"]].copy()
 
     # For each cell type, count the number of unique sample IDs that have sufficient number of cells,
     # and filter out cell types that don't have at least `num_samples_threshold` samples with sufficient number of cells.

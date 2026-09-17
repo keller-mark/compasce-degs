@@ -143,6 +143,10 @@ if __name__ == "__main__":
         ('EnrollmentCategory', ('AKI', 'CKD')),
         # D-CKD vs. HRT. (D-CKD not in enrollment category values anymore. Should I use "Diabetes History" Yes/No column?)
         ('EnrollmentCategory', ('CKD', 'Healthy Reference')),
+        # DM-R comparisons
+        ('EnrollmentCategory', ('Healthy Reference', 'DM-R')),
+        ('EnrollmentCategory', ('CKD', 'DM-R')),
+        ('EnrollmentCategory', ('AKI', 'DM-R')),
         # Diabetes CKD vs. Hypertension CKD. (DKD nor H-CKD not in enrollment category values anymore. Should I use Yes/No columns?)
         #('EnrollmentCategory', ('DKD', 'H-CKD')),
         # D-CKD vs. HRT
