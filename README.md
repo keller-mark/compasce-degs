@@ -32,7 +32,7 @@ When using the adjudicated sample categorizations, we want to aggregate the AKI 
 
 
 ```sh
-snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime
+snakemake --snakefile snrnaseq_kpmp.smk -j 1 --rerun-triggers mtime
 ```
 
 # compasce
@@ -168,6 +168,15 @@ For example, methods may have long execution times or high computational resourc
 
 -->
 
+## Converting h5seurat to h5ad
+
+KPMP repository provides data via `.h5seurat` files. The first step is to use R to convert them to `.h5ad` files.
+```r
+remotes::install_github("mojaveazure/seurat-disk")
+library(SeuratDisk)
+Convert("KPMP_PREMIERE_something.h5seurat", dest = "h5ad")
+```
+
 ## Development
 
 ```sh
@@ -182,13 +191,13 @@ source .venv/bin/activate
 unset CONDA_PREFIX
 export SLURM_ACCOUNT=$(sshare -u mk596 -U | cut -d ' ' -f 1 | tail -n 1)
 
-snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
+snakemake --snakefile snrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --omit-from insert_celltype_vs_rest_degs insert_within_celltype_case_vs_control_degs \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
 
 # Run the insertion stuff one-by-one
-snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
+snakemake --snakefile snrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
 
@@ -341,19 +350,19 @@ pip install -e ".[dev]"
 conda activate compasce-env2
 export SLURM_ACCOUNT=$(sshare -u mk596 -U | cut -d ' ' -f 1 | tail -n 1)
 
-snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
+snakemake --snakefile snrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
 
 # Or
 
-snakemake --snakefile scrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
+snakemake --snakefile snrnaseq_kpmp.smk -j 100 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --omit-from insert_celltype_vs_rest_degs insert_within_celltype_case_vs_control_degs \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
 
 # Run the insertion stuff one-by-one
-snakemake --snakefile scrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
+snakemake --snakefile snrnaseq_kpmp.smk -j 1 --rerun-triggers mtime \
   --keep-incomplete --keep-going --latency-wait 30 --slurm \
   --default-resources slurm_account=$SLURM_ACCOUNT slurm_partition=short runtime=30
 

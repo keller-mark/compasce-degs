@@ -14,3 +14,4 @@ data/
 *.h5Seurat
 *.zarr/
 .snakemake/
+.Rproj.user

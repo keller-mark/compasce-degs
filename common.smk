@@ -29,5 +29,5 @@ SRC_DIR = "src"
 SCRIPTS_DIR = "scripts"
 DATA_DIR = ("data" if not IS_O2 else "/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis")
 RAW_DIR = join(DATA_DIR, "raw")
-INTERMEDIATE_DIR = join(DATA_DIR, "intermediate")
-PROCESSED_DIR = join(DATA_DIR, "processed")
+COMMON_INTERMEDIATE_DIR = join(DATA_DIR, "intermediate")
+COMMON_PROCESSED_DIR = join(DATA_DIR, "processed")
