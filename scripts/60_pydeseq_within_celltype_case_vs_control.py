@@ -26,6 +26,14 @@ def clean_deg_df(df):
     return df
 
 
+def weighted_layer_mean(pdata, layer_key):
+    # Weighted average of a per-sample layer across samples, weighted by the number of cells in each sample.
+    # Returns a pd.Series indexed by gene.
+    weights = pdata.obs[NUM_CELLS_COLNAME].to_numpy(dtype=float)
+    values = np.asarray(pdata.layers[layer_key], dtype=float)
+    weighted_mean = (values * weights[:, np.newaxis]).sum(axis=0) / weights.sum()
+    return pd.Series(weighted_mean, index=pdata.var_names)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -123,7 +131,7 @@ if __name__ == "__main__":
     has_lhs_and_rhs = pdata.obs[sample_group_col].nunique() == 2
     if not has_lhs_and_rhs:
         print(f"Warning: after filtering, there are not at least 2 groups to compare for cell type {cell_type} and {sample_group_col}: {sample_group_lhs} vs {sample_group_rhs}. Skipping DE analysis for this pair and cell type.")
-        empty_df = pd.DataFrame(columns=["variable", "logfoldchanges", "pvals", "pvals_adj"])
+        empty_df = pd.DataFrame(columns=["variable", "logfoldchanges", "pvals", "pvals_adj", "pct_expressing", "mean_expression"])
         empty_df.to_csv(args.output_de_csv, index=False)
     else:
         # For cell type vs. rest, we use a design such as "~subclass_l1"
@@ -133,6 +141,12 @@ if __name__ == "__main__":
 
         df = pds2.test_contrasts(pds2.contrast(column=sample_group_col, baseline=sample_group_rhs, group_to_compare=sample_group_lhs))
         df = clean_deg_df(df)
+
+        # Append columns for the percent of cells expressing each gene and the mean expression of each gene in this cell type in the target group (the sample group LHS).
+        # Computed from the per-sample data as the average across samples, weighted by the number of cells in each sample.
+        pdata_target = pdata[pdata.obs[sample_group_col] == sample_group_lhs]
+        df["pct_expressing"] = weighted_layer_mean(pdata_target, "pct_expressing").reindex(df.index)
+        df["mean_expression"] = weighted_layer_mean(pdata_target, "mean_expression").reindex(df.index)
 
         print("Done with DE analysis, writing output CSV...")
 

@@ -18,6 +18,14 @@ if __name__ == "__main__":
     obs_concat = pd.concat([adata.obs for adata in adatas], axis=0)
     var = adatas[0].var.copy()
 
+    # Concatenate the layers as well.
+    # Only keep layers that are present in all inputs.
+    layer_keys = [k for k in adatas[0].layers.keys() if all(k in adata.layers for adata in adatas)]
+    layers_concat = {
+        k: np.concatenate([np.asarray(adata.layers[k]) for adata in adatas], axis=0)
+        for k in layer_keys
+    }
+
     # Create new AnnData object
-    combined_adata = AnnData(X=X_concat, obs=obs_concat, var=var)
+    combined_adata = AnnData(X=X_concat, obs=obs_concat, var=var, layers=layers_concat)
     combined_adata.write_h5ad(output_file)

@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
     parser.add_argument("--sample-id", type=str, required=True, help = "Sample ID to subset for")
     parser.add_argument("--agg-func", type=str, required=True, choices=["mean", "sum"], default="sum", help = "Aggregation function to use (default: sum)")
-    
+
     args = parser.parse_args()
 
     adata = read_h5ad(args.input_h5ad)
@@ -42,7 +42,7 @@ if __name__ == "__main__":
             return x.sum() if agg_func == "sum" else x.mean()
         else:
             return x.iloc[0] if x.nunique() == 1 else "mixed values"
-    
+
     if adata.obs.shape[0] == 0:
         first_row = {
             col: np.nan for col in adata.obs.columns
@@ -53,6 +53,10 @@ if __name__ == "__main__":
             args.sample_id_col: args.sample_id,
         }
         agg_obs = pd.DataFrame(columns=adata.obs.columns, data=[first_row])
+
+        # No cells to aggregate, so fill with zeros (avoids NaN from mean over an empty axis).
+        mean_X = np.zeros_like(agg_X, dtype=float)
+        pct_X = np.zeros_like(agg_X, dtype=float)
     else:
         agg_obs = (
             adata.obs
@@ -61,8 +65,17 @@ if __name__ == "__main__":
                 .reset_index()
         )
 
+        # Append layers for the mean expression of each gene and the percent of cells expressing each gene (count > 0).
+        mean_X = np.expand_dims(np.asarray(adata.X.mean(axis=0)).flatten(), axis=0)
+        pct_X = np.expand_dims(np.asarray((adata.X > 0).sum(axis=0)).flatten() / num_cells_orig * 100, axis=0)
+
     # Append column for the number of cells that were aggregated, which can be used for filtering later.
     agg_obs["num_cells_orig"] = num_cells_orig
+
+    agg_layers = {
+        "mean_expression": mean_X,
+        "pct_expressing": pct_X,
+    }
 
     print(agg_obs)
 
@@ -70,9 +83,7 @@ if __name__ == "__main__":
     agg_var = adata.var.copy()
 
     # Create new AnnData object
-    agg_adata = AnnData(X=agg_X, obs=agg_obs, var=agg_var)
+    agg_adata = AnnData(X=agg_X, obs=agg_obs, var=agg_var, layers=agg_layers)
 
     # Save
     agg_adata.write_h5ad(args.output_h5ad)
-
-
