@@ -25,7 +25,7 @@ def cell_type_name_to_index(cell_type_name, cell_type_col):
 
 def cell_type_index_to_name(cell_type_index, cell_type_col):
   return config["cell_types"][cell_type_col][cell_type_index]
-  
+
 def normalize_identifier(cell_type):
     # Normalize cell type names to be filesystem-friendly, since we'll be using them in file paths.
     return (
@@ -88,7 +88,7 @@ rule all:
   input:
     CLEANED_H5AD_PATH,
     join(INTERMEDIATE_DIR, "combined.subclass_l1.specimen.sum.pdata.h5ad"),
-    
+
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic"),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_pearson_residuals"),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.densmap"),
@@ -98,7 +98,7 @@ rule all:
     # L1: Cell type vs rest
     expand(
       #join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
-      
+
       [
         join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}." + sample_group + "." + normalize_identifier(group_category) + ".{agg_func}")
         for (sample_group, group_category) in UNIQUE_SAMPLE_GROUP_AND_CATEGORY
@@ -112,7 +112,7 @@ rule all:
     expand(
       [
         #join(INTERMEDIATE_DIR, f"pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}.csv")
-        
+
         #join_zdone(ZARR_PATH, "uns", f"comparison_metadata.pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}")
         join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}." + c['colname'] + "." + normalize_identifier(c['lhs']) + "." + normalize_identifier(c['rhs']) + ".{agg_func}")
         for c in config["sample_group_pairs"]
@@ -372,7 +372,7 @@ rule combine_splits:
   resources:
     slurm_partition="short",
     runtime=30, # half hour
-    mem_mb=32_000, # 16 GB
+    mem_mb=64_000, # 64 GB
     cpus_per_task=2
   script:
     join(SCRIPTS_DIR, "30_combine_splits.py")

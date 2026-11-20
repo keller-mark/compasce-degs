@@ -17,14 +17,20 @@ def insert_celltype_vs_rest_degs(
     # Check for a .zdone file
     if ladata.has_zdone(["uns", out_key]):
         return ladata
-    
+
     # Check whether df is empty (insufficient data for DEG analysis).
     df = pd.read_csv(csv_path)
     is_empty = df.shape[0] == 0
 
     is_filtered_by_sample_group = sample_group_col != "__all__" and sample_group_name != "__all__"
 
-    cmp = cm.add_comparison([("compare", cell_type_col), ("val", cell_type_name), "__rest__"])
+    cmp_key = [("compare", cell_type_col), ("val", cell_type_name), "__rest__"]
+    if is_filtered_by_sample_group:
+        # We want the comparison key to include the sample-group filtering to ensure
+        # unique keys for different filtering setups. Otherwise, the dataframes
+        # will overwrite each other because the keys will collide.
+        cmp_key = [("filter", sample_group_col), ("val", sample_group_name)] + cmp_key
+    cmp = cm.add_comparison(cmp_key)
 
     uns_key = cmp.append_df("uns", "pydeseq2", {
         "contrast": {
@@ -66,7 +72,7 @@ def insert_within_celltype_case_vs_control_degs(
     # Check for a .zdone file
     if ladata.has_zdone(["uns", out_key]):
         return ladata
-    
+
     # Check whether df is empty (insufficient data for DEG analysis).
     df = pd.read_csv(csv_path)
     is_empty = df.shape[0] == 0
