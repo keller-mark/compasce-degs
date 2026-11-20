@@ -373,15 +373,19 @@ srun -p interactive --pty -t 4:00:00 -n 2 --mem 32G bash
 # ssh-add ~/.ssh/
 # source .venv/bin/activate
 
-export ZARR_PATH=/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis/processed/kpmp-apr-2026.adata.zarr
+export ZARR_PATH=/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis/processed/sn/kpmp-apr-2026.adata.zarr
+# OR
+# export ZARR_PATH=/n/data1/hms/dbmi/gehlenborg/lab/scmd-analysis/processed/sc/kpmp-aug-2026.adata.zarr
 uv run scripts/99_merge_metadata.py --zarr-path $ZARR_PATH
 
 # Upload to S3:
-cd ~/lab/scmd-analysis/processed
+cd ~/lab/scmd-analysis/processed/sn
+# OR
+# cd ~/lab/scmd-analysis/processed/sc
 
 # Set AWS env vars
 
-aws s3 cp kpmp-apr-2026.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-may-2026.adata.zarr --recursive
+aws s3 cp kpmp-apr-2026.adata.zarr s3://vitessce-data-v2/kpmp-atlas-v2/sn-rna-seq/processed/kpmp-nov-2026.adata.zarr --recursive
 ```
 
 
