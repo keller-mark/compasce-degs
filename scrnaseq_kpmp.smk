@@ -3,17 +3,21 @@ configfile: "./scrnaseq_kpmp.yaml"
 
 DEBUG_MODE = False
 
-RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad")
-RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv")
+INTERMEDIATE_DIR = join(COMMON_INTERMEDIATE_DIR, "sc")
+PROCESSED_DIR = join(COMMON_PROCESSED_DIR, "sc")
+
+RAW_H5AD_PATH = join(RAW_DIR, "kpmp-aug-2026", "KPMP_PREMIERE_SC_version2_ForExplorer_RemovedBatchEffect_Final2025.clean.h5ad")
+RAW_SAMPLES_PATH = join(RAW_DIR, "kpmp-aug-2026", "20260618_OpenAccessClinicalData.csv")
+
 
 # Intermediate output paths
 CLEANED_H5AD_PATH = join(INTERMEDIATE_DIR, "cleaned.h5ad")
-ZARR_PATH = join(PROCESSED_DIR, "kpmp-apr-2026.adata.zarr")
+ZARR_PATH = join(PROCESSED_DIR, "kpmp-aug-2026.adata.zarr")
 NORMALIZED_H5AD_PATH = join(INTERMEDIATE_DIR, "normalized.h5ad")
 
 L1_CELL_TYPES = sorted(config["cell_types"]["subclass_l1"])
 L2_CELL_TYPES = sorted(config["cell_types"]["subclass_l2"])
-L3_CELL_TYPES = sorted(config["cell_types"]["subclass_l3"])
+#L3_CELL_TYPES = sorted(config["cell_types"]["subclass_l3"])
 
 def cell_type_name_to_index(cell_type_name, cell_type_col):
   # Convert cell type name to index in config["cell_types"]["subclass_l1"], which
@@ -22,7 +26,7 @@ def cell_type_name_to_index(cell_type_name, cell_type_col):
 
 def cell_type_index_to_name(cell_type_index, cell_type_col):
   return config["cell_types"][cell_type_col][cell_type_index]
-  
+
 def normalize_identifier(cell_type):
     # Normalize cell type names to be filesystem-friendly, since we'll be using them in file paths.
     return (
@@ -62,11 +66,21 @@ SAMPLE_GROUP_RHSS = [ c["rhs"] for c in config["sample_group_pairs"] ]
 
 UNIQUE_SAMPLE_GROUP_COLS = sorted(set(SAMPLE_GROUP_COLS))
 
+# This list is used when performing cell-type-vs-all-others for not only all samples, but also within subgroups.
+# We use set here to ensure that we don't have duplicate entries for the same sample group and category.
+# Note that zip produces tuples, which are hashable and can be added to a set.
+# We add a special __all__ entry to ensure that we also perform cell-type-vs-all-others for all samples.
+UNIQUE_SAMPLE_GROUP_AND_CATEGORY = [("__all__", "__all__")] + list(set(
+  list(zip(SAMPLE_GROUP_COLS, SAMPLE_GROUP_LHSS))
+  + list(zip(SAMPLE_GROUP_COLS, SAMPLE_GROUP_RHSS))
+))
+
+
 
 if DEBUG_MODE:
     L1_CELL_TYPES = L1_CELL_TYPES[:5]
     L2_CELL_TYPES = L2_CELL_TYPES[:5]
-    L3_CELL_TYPES = L3_CELL_TYPES[:5]
+    #L3_CELL_TYPES = L3_CELL_TYPES[:5]
     SPECIMEN_IDS = SPECIMEN_IDS[:5]
 
 
@@ -75,7 +89,7 @@ rule all:
   input:
     CLEANED_H5AD_PATH,
     join(INTERMEDIATE_DIR, "combined.subclass_l1.specimen.sum.pdata.h5ad"),
-    
+
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_basic"),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.normalize_pearson_residuals"),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.densmap"),
@@ -85,8 +99,11 @@ rule all:
     # L1: Cell type vs rest
     expand(
       #join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
-      
-      join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}"),
+
+      [
+        join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}." + sample_group + "." + normalize_identifier(group_category) + ".{agg_func}")
+        for (sample_group, group_category) in UNIQUE_SAMPLE_GROUP_AND_CATEGORY
+      ],
       cell_type_col=["subclass_l1"],
       cell_type_name_norm=[normalize_identifier(ct) for ct in L1_CELL_TYPES],
       sample_id_col=[SPECIMEN_ID_COL],
@@ -96,7 +113,7 @@ rule all:
     expand(
       [
         #join(INTERMEDIATE_DIR, f"pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}.csv")
-        
+
         #join_zdone(ZARR_PATH, "uns", f"comparison_metadata.pydeseq_within_celltype.{{cell_type_col}}.{{cell_type_name_norm}}.{{sample_id_col}}.{c['colname']}.{normalize_identifier(c['lhs'])}.{normalize_identifier(c['rhs'])}.{{agg_func}}")
         join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}." + c['colname'] + "." + normalize_identifier(c['lhs']) + "." + normalize_identifier(c['rhs']) + ".{agg_func}")
         for c in config["sample_group_pairs"]
@@ -142,7 +159,7 @@ rule all:
 rule insert_within_celltype_case_vs_control_degs:
   input:
     ladata=join_zdone(ZARR_PATH, "uns", "comparison_metadata"),
-    deg_results=join(INTERMEDIATE_DIR, "pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv")
+    deg_results=join(INTERMEDIATE_DIR,               "pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv")
   output:
     join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}")
   params:
@@ -173,11 +190,12 @@ rule insert_within_celltype_case_vs_control_degs:
 rule insert_celltype_vs_rest_degs:
   input:
     ladata=join_zdone(ZARR_PATH, "uns", "comparison_metadata"),
-    deg_results=join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
+    deg_results=join(INTERMEDIATE_DIR,               "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv")
   output:
-    join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}")
+    join_zdone(ZARR_PATH, "uns", "comparison_metadata.pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}")
   params:
-    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
+    sample_group_name_orig=lambda w: unnormalize_identifier(w.sample_group_name_norm)
   resources:
     slurm_partition="short",
     runtime=60, # half hour
@@ -192,6 +210,8 @@ rule insert_celltype_vs_rest_degs:
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name "{params.cell_type_name_orig}" \
         --sample-id-col {wildcards.sample_id_col} \
+        --sample-group-col {wildcards.sample_group_col} \
+        --sample-group-name "{params.sample_group_name_orig}" \
         --agg-func {wildcards.agg_func} \
         --out-path {output}
     """
@@ -277,7 +297,7 @@ rule pydeseq_within_celltype_case_vs_control:
   input:
     join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
   output:
-    de_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv"),
+    de_df=join(INTERMEDIATE_DIR,                          "pydeseq_within_celltype.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv"),
     obs_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype_obs_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv"),
     var_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_within_celltype_var_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_lhs_norm}.{sample_group_rhs_norm}.{agg_func}.csv")
   params:
@@ -312,11 +332,12 @@ rule pydeseq_celltype_vs_rest:
   input:
     join(INTERMEDIATE_DIR, "combined.{cell_type_col}.{sample_id_col}.{agg_func}.pdata.h5ad")
   output:
-    de_df=join(INTERMEDIATE_DIR, "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
-    obs_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_obs_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv"),
-    var_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_var_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{agg_func}.csv")
+    de_df=join(INTERMEDIATE_DIR,                          "pydeseq.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv"),
+    obs_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_obs_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv"),
+    var_filtering_df=join(INTERMEDIATE_DIR, "pydeseq_var_filtering.{cell_type_col}.{cell_type_name_norm}.{sample_id_col}.{sample_group_col}.{sample_group_name_norm}.{agg_func}.csv")
   params:
-    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm)
+    cell_type_name_orig=lambda w: unnormalize_identifier(w.cell_type_name_norm),
+    sample_group_name_orig=lambda w: unnormalize_identifier(w.sample_group_name_norm)
   resources:
     slurm_partition="short",
     runtime=60, # 1 hour
@@ -330,6 +351,8 @@ rule pydeseq_celltype_vs_rest:
         --output-obs-filtering-csv {output.obs_filtering_df} \
         --output-var-filtering-csv {output.var_filtering_df} \
         --sample-id-col {wildcards.sample_id_col} \
+        --sample-group-col "{wildcards.sample_group_col}" \
+        --sample-group-name "{params.sample_group_name_orig}" \
         --cell-type-col {wildcards.cell_type_col} \
         --cell-type-name "{params.cell_type_name_orig}" \
         --num-samples-threshold {NUM_SAMPLES_THRESHOLD} \
@@ -350,7 +373,7 @@ rule combine_splits:
   resources:
     slurm_partition="short",
     runtime=30, # half hour
-    mem_mb=32_000, # 16 GB
+    mem_mb=64_000, # 64 GB
     cpus_per_task=2
   script:
     join(SCRIPTS_DIR, "30_combine_splits.py")
@@ -394,7 +417,7 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
   resources:
     slurm_partition="short",
     runtime=30, # half hour
-    mem_mb=16_000, # 16 GB
+    mem_mb=32_000, # 16 GB
     cpus_per_task=2
   shell:
     """
@@ -411,9 +434,9 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
 
 rule clean_h5ad:
   input:
-    h5ad=join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad"),
-    clinical=join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv"),
-    deg_dir=join(RAW_DIR, "kpmp-aug-2025")
+    # The output of generate_sc_yml.ipynb
+    h5ad=ancient(join(RAW_DIR, "kpmp-aug-2026", "KPMP_PREMIERE_SC_version2_ForExplorer_RemovedBatchEffect_Final2025.clean.h5ad")),
+    clinical=ancient(join(RAW_DIR, "kpmp-aug-2026", "20260618_OpenAccessClinicalData.csv"))
   output:
     protected(CLEANED_H5AD_PATH),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata")
@@ -426,10 +449,9 @@ rule clean_h5ad:
     cpus_per_task=2
   shell:
     """
-    python scripts/00_run_comparisons_kpmp_2025.py \
+    python scripts/00_run_comparisons_kpmp_sc_2026.py \
         --input-h5ad {input.h5ad} \
         --input-csv {input.clinical} \
-        --input-deg-dir {input.deg_dir} \
         --output {CLEANED_H5AD_PATH} \
         --output-zarr {ZARR_PATH} \
         --stop-early {params.subset_line}

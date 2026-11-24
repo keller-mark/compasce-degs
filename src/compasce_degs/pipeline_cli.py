@@ -38,6 +38,8 @@ def run_cli():
     subparser_insert_celltype_vs_rest_degs.add_argument("--csv-path", type=str, required=True, help = "Path to input CSV file.")
     subparser_insert_celltype_vs_rest_degs.add_argument("--cell-type-col", type=str, required=True, help = "Name of cell type column")
     subparser_insert_celltype_vs_rest_degs.add_argument("--sample-id-col", type=str, required=True, help = "Name of sample ID column")
+    subparser_insert_celltype_vs_rest_degs.add_argument("--sample-group-col", type=str, required=True, help = "Name of sample group column to use for filtering, or __all__ if not applicable.")
+    subparser_insert_celltype_vs_rest_degs.add_argument("--sample-group-name", type=str, required=True, help = "Name of sample group to use for filtering, or __all__ if not applicable.")
     subparser_insert_celltype_vs_rest_degs.add_argument("--cell-type-name", type=str, required=True, help = "Cell type to subset for")
     subparser_insert_celltype_vs_rest_degs.add_argument("--agg-func", type=str, required=True, help = "Aggregation function used")
     subparser_insert_celltype_vs_rest_degs.add_argument("--out-path", type=str, required=True, help = "Output path")
@@ -103,6 +105,8 @@ def run_cli():
         kwargs["csv_path"] = args.csv_path
         kwargs["cell_type_col"] = args.cell_type_col
         kwargs["sample_id_col"] = args.sample_id_col
+        kwargs["sample_group_col"] = args.sample_group_col
+        kwargs["sample_group_name"] = args.sample_group_name
         kwargs["cell_type_name"] = args.cell_type_name
         kwargs["agg_func"] = args.agg_func
         kwargs["out_key"] = out_key

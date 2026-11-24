@@ -7,7 +7,9 @@ from anndata import AnnData
 
 def insert_celltype_vs_rest_degs(
     ladata, cm,
-    csv_path, cell_type_col, sample_id_col, cell_type_name, agg_func,
+    csv_path, cell_type_col, sample_id_col,
+    sample_group_col, sample_group_name,
+    cell_type_name, agg_func,
     out_key,
 ):
     print(f"Inserting pseudobulk for cell types vs rest, using PyDESeq2")
@@ -15,12 +17,20 @@ def insert_celltype_vs_rest_degs(
     # Check for a .zdone file
     if ladata.has_zdone(["uns", out_key]):
         return ladata
-    
+
     # Check whether df is empty (insufficient data for DEG analysis).
     df = pd.read_csv(csv_path)
     is_empty = df.shape[0] == 0
 
-    cmp = cm.add_comparison([("compare", cell_type_col), ("val", cell_type_name), "__rest__"])
+    is_filtered_by_sample_group = sample_group_col != "__all__" and sample_group_name != "__all__"
+
+    cmp_key = [("compare", cell_type_col), ("val", cell_type_name), "__rest__"]
+    if is_filtered_by_sample_group:
+        # We want the comparison key to include the sample-group filtering to ensure
+        # unique keys for different filtering setups. Otherwise, the dataframes
+        # will overwrite each other because the keys will collide.
+        cmp_key = [("filter", sample_group_col), ("val", sample_group_name)] + cmp_key
+    cmp = cm.add_comparison(cmp_key)
 
     uns_key = cmp.append_df("uns", "pydeseq2", {
         "contrast": {
@@ -33,6 +43,10 @@ def insert_celltype_vs_rest_degs(
         "obsType": "cell",
         "featureType": "gene",
         "obsSetSelection": [[cell_type_col, cell_type_name]],
+        **({
+            "sampleSetFilter": [[sample_group_col, sample_group_name]],
+            "sampleSetSelection": [[sample_group_col, sample_group_name]],
+        } if is_filtered_by_sample_group else {})
     })
 
     if not is_empty:
@@ -58,7 +72,7 @@ def insert_within_celltype_case_vs_control_degs(
     # Check for a .zdone file
     if ladata.has_zdone(["uns", out_key]):
         return ladata
-    
+
     # Check whether df is empty (insufficient data for DEG analysis).
     df = pd.read_csv(csv_path)
     is_empty = df.shape[0] == 0

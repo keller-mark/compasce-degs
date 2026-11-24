@@ -32,7 +32,7 @@ dependencies = [
   'pylemur @ git+https://github.com/keller-mark/pyLemur@94b03c7', # with dask
   #'pylemur @ git+https://github.com/keller-mark/pyLemur@40c9530', # without dask
   'scanpy @ git+https://github.com/keller-mark/scanpy@af55e9d',
-  "anndata @ git+https://github.com/keller-mark/anndata@keller-mark/bad-encoding-fallback",
+  "anndata @ git+https://github.com/keller-mark/anndata@keller-mark/bad-encoding-fallback-more",
   "numcodecs>=0.5.7,<0.16.0",
   "zarr>=2.5.0,<3",
   'scipy==1.12.0',
