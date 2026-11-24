@@ -435,8 +435,8 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
 rule clean_h5ad:
   input:
     # The output of generate_sc_yml.ipynb
-    h5ad=join(RAW_DIR, "kpmp-aug-2026", "KPMP_PREMIERE_SC_version2_ForExplorer_RemovedBatchEffect_Final2025.clean.h5ad"),
-    clinical=join(RAW_DIR, "kpmp-aug-2026", "20260618_OpenAccessClinicalData.csv")
+    h5ad=ancient(join(RAW_DIR, "kpmp-aug-2026", "KPMP_PREMIERE_SC_version2_ForExplorer_RemovedBatchEffect_Final2025.clean.h5ad")),
+    clinical=ancient(join(RAW_DIR, "kpmp-aug-2026", "20260618_OpenAccessClinicalData.csv"))
   output:
     protected(CLEANED_H5AD_PATH),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata")

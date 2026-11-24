@@ -433,10 +433,10 @@ rule split_for_pseudobulk_by_cell_type_and_specimen_id:
 
 rule clean_h5ad:
   input:
-    h5ad=join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad"),
-    clinical=join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv"),
+    h5ad=ancient(join(RAW_DIR, "kpmp-aug-2025", "SingleNucleus_KPMP_Explorer_05182025.h5ad")),
+    clinical=ancient(join(RAW_DIR, "kpmp-aug-2025", "20250606_OpenAccessClinicalData.csv")),
     # TODO: is this still needed/used?
-    deg_dir=join(RAW_DIR, "kpmp-aug-2025")
+    deg_dir=ancient(join(RAW_DIR, "kpmp-aug-2025"))
   output:
     protected(CLEANED_H5AD_PATH),
     join_zdone(ZARR_PATH, "uns", "comparison_metadata")
